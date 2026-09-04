@@ -2,6 +2,7 @@ import { Component } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Router, RouterLink } from "@angular/router";
+
 import {
   IonContent,
   IonItem,
@@ -10,9 +11,10 @@ import {
   IonText,
   IonSpinner,
 } from "@ionic/angular/standalone";
+
 import { SupabaseService } from "../../services/supabase.service";
 
-// NUEVO: solo valida formato + dominio gmail.com
+// Solo permite direcciones @gmail.com
 const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 
 @Component({
@@ -29,17 +31,19 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
     IonText,
     IonSpinner,
   ],
+
   template: `
     <ion-content [fullscreen]="true" class="register-page">
       <div class="register-background">
         <div class="register-container">
-          <!-- LOGO / CABECERA -->
+          <!-- CABECERA -->
           <div class="register-header">
             <div class="logo-box">
               <span>TR</span>
             </div>
 
             <h1>Crear cuenta</h1>
+
             <p>
               Regístrate para comenzar a utilizar<br />
               nuestra plataforma
@@ -109,10 +113,11 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
             <ion-button
               expand="block"
               class="register-button"
+              type="button"
               (click)="register()"
               [disabled]="loading"
             >
-              <ion-spinner *ngIf="loading" name="dots"> </ion-spinner>
+              <ion-spinner *ngIf="loading" name="dots"></ion-spinner>
 
               <span *ngIf="!loading"> Crear mi cuenta </span>
             </ion-button>
@@ -127,8 +132,9 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
             </div>
           </div>
 
+          <!-- FOOTER -->
           <div class="register-footer">
-            <span>Tu cuenta quedará pendiente de aprobación</span>
+            <span> Tu cuenta quedará pendiente de aprobación </span>
           </div>
         </div>
       </div>
@@ -202,7 +208,6 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 
       .register-header h1 {
         margin: 0;
-
         color: #14213d;
         font-size: 30px;
         line-height: 1.15;
@@ -212,7 +217,6 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 
       .register-header p {
         margin: 10px 0 0;
-
         color: #71809a;
         font-size: 14px;
         line-height: 1.55;
@@ -253,7 +257,6 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 
       .form-header h2 {
         margin: 0;
-
         color: #17243c;
         font-size: 18px;
         font-weight: 800;
@@ -261,7 +264,6 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 
       .form-header p {
         margin: 6px 0 0;
-
         color: #8490a5;
         font-size: 13px;
       }
@@ -355,6 +357,7 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
         margin: 1px 0 0;
 
         color: #c9363d;
+
         font-size: 13px;
         line-height: 1.4;
       }
@@ -365,7 +368,6 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
         --background: #1769ff;
         --background-hover: #0f5de8;
         --background-activated: #0f5de8;
-
         --border-radius: 14px;
 
         height: 50px;
@@ -391,7 +393,6 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
-
         gap: 2px;
 
         margin-top: 20px;
@@ -409,6 +410,7 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 
         font-size: 13px;
         font-weight: 800;
+
         text-transform: none;
       }
 
@@ -420,6 +422,7 @@ const GMAIL_REGEX = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
         margin-top: 20px;
 
         color: #9aa5b7;
+
         font-size: 11px;
       }
 
@@ -477,6 +480,7 @@ export class RegisterPage {
   fullName = "";
   email = "";
   password = "";
+
   loading = false;
   errorMessage = "";
 
@@ -487,31 +491,68 @@ export class RegisterPage {
 
   async register() {
     this.errorMessage = "";
-    if (!this.fullName || !this.email || !this.password) {
-      this.errorMessage = "Completa todos los campos.";
+
+    // Limpiamos los valores
+    const name = this.fullName.trim();
+    const email = this.email.trim().toLowerCase();
+    const password = this.password.trim();
+
+    // Validar nombre
+    if (!name) {
+      this.errorMessage = "Introduce tu nombre completo.";
       return;
     }
 
-    // NUEVO: validación de Gmail en el front (capa 1, la de la BD es capa 2)
-    if (!GMAIL_REGEX.test(this.email.trim())) {
+    // Validar email
+    if (!email) {
+      this.errorMessage = "Introduce tu correo electrónico.";
+      return;
+    }
+
+    // Validar Gmail
+    if (!GMAIL_REGEX.test(email)) {
       this.errorMessage =
         "El correo debe ser una dirección de Gmail (@gmail.com).";
       return;
     }
 
-    this.loading = true;
-    try {
-      const { error } = await this.supabase.signUp(
-        this.email,
-        this.password,
-        this.fullName,
-      );
-      if (error) throw error;
+    // Validar contraseña
+    if (!password) {
+      this.errorMessage = "Introduce una contraseña.";
+      return;
+    }
 
-      // Recién registrado, siempre queda pendiente de aprobación.
-      this.router.navigateByUrl("/pending-approval");
+    if (password.length < 6) {
+      this.errorMessage = "La contraseña debe tener al menos 6 caracteres.";
+      return;
+    }
+
+    // Evitar dobles clics
+    if (this.loading) {
+      return;
+    }
+
+    this.loading = true;
+
+    try {
+      console.log("Intentando registrar empleado:", email);
+
+      const { error } = await this.supabase.signUp(email, password, name);
+
+      if (error) {
+        console.error("Error de Supabase:", error);
+        throw error;
+      }
+
+      console.log("Registro correcto");
+
+      await this.router.navigateByUrl("/pending-approval", {
+        replaceUrl: true,
+      });
     } catch (err: any) {
-      this.errorMessage = err.message ?? "No se pudo crear la cuenta.";
+      console.error("Error registrando empleado:", err);
+
+      this.errorMessage = err?.message ?? "No se pudo crear la cuenta.";
     } finally {
       this.loading = false;
     }

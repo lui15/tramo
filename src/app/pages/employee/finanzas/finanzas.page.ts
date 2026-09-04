@@ -1,5 +1,7 @@
 import { Component, OnInit } from "@angular/core";
+
 import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 
 import {
@@ -44,7 +46,9 @@ interface MonthOption {
 
 @Component({
   selector: "app-employee-finanzas",
+
   standalone: true,
+
   imports: [
     CommonModule,
     FormsModule,
@@ -55,6 +59,7 @@ interface MonthOption {
     IonIcon,
     EmployeeTabbarComponent,
   ],
+
   template: `
     <ion-header class="finance-header">
       <ion-toolbar>
@@ -77,7 +82,7 @@ interface MonthOption {
             </div>
           </div>
 
-          <span class="hero-label">GENERADO</span>
+          <span class="hero-label"> GENERADO </span>
 
           <div class="hero-value">
             {{ generated | number: "1.2-2" }}
@@ -104,7 +109,7 @@ interface MonthOption {
             </div>
 
             <div class="stat-info">
-              <span class="stat-label">PENDIENTE</span>
+              <span class="stat-label"> PENDIENTE </span>
 
               <span class="stat-value">
                 {{ pending | number: "1.2-2" }}
@@ -123,7 +128,7 @@ interface MonthOption {
             </div>
 
             <div class="stat-info">
-              <span class="stat-label">COBRADO</span>
+              <span class="stat-label"> COBRADO </span>
 
               <span class="stat-value">
                 {{ paid | number: "1.2-2" }}
@@ -142,7 +147,7 @@ interface MonthOption {
             </div>
 
             <div class="stat-info">
-              <span class="stat-label">TRABAJOS</span>
+              <span class="stat-label"> TRABAJOS </span>
 
               <span class="stat-value">
                 {{ filteredJobs.length }}
@@ -173,7 +178,7 @@ interface MonthOption {
             </div>
 
             <div class="month-info">
-              <span>MES SELECCIONADO</span>
+              <span> MES SELECCIONADO </span>
 
               <strong>
                 {{ currentMonthLabel }}
@@ -259,26 +264,16 @@ interface MonthOption {
                     <span class="ledger-description">
                       <span class="data-item">
                         <ion-icon name="calendar-outline"></ion-icon>
+
                         {{ formatDate(item.date) }}
                       </span>
 
                       <span class="data-item">
                         <ion-icon name="time-outline"></ion-icon>
+
                         {{ formatTime(item.time) }}
                       </span>
                     </span>
-
-                    <!--
-                      AQUÍ YA NO DICE:
-
-                      2 horas/días trabajados
-
-                      Ahora dice:
-
-                      2 horas
-                      o
-                      2 días
-                    -->
 
                     <span class="ledger-work-duration">
                       {{ formatWorkAmount(item.hoursOrDays, item.workUnit) }}
@@ -289,17 +284,20 @@ interface MonthOption {
 
                   <ng-container *ngIf="item.kind === 'saldo'">
                     <span class="ledger-type payment-title">
-                      Pago a {{ profile?.full_name || "ti" }}
+                      Pago a
+                      {{ profile?.full_name || "ti" }}
                     </span>
 
                     <span class="ledger-description">
                       <span class="data-item">
                         <ion-icon name="calendar-outline"></ion-icon>
+
                         {{ formatDate(item.date) }}
                       </span>
 
                       <span class="data-item">
                         <ion-icon name="time-outline"></ion-icon>
+
                         {{ formatTime(item.time) }}
                       </span>
                     </span>
@@ -373,23 +371,17 @@ interface MonthOption {
       :host {
         --finance-bg: #f8fafc;
         --finance-white: #ffffff;
-
         --finance-primary: #1769ff;
         --finance-primary-dark: #123b78;
         --finance-primary-light: #eaf1ff;
-
         --finance-text: #172b4d;
         --finance-text-soft: #61708a;
         --finance-muted: #8994a6;
-
         --finance-border: #e5eaf1;
-
         --finance-orange: #e99316;
         --finance-orange-bg: #fff4e4;
-
         --finance-green: #299b45;
         --finance-green-bg: #eaf8ed;
-
         --finance-shadow: 0 8px 30px rgba(24, 47, 83, 0.06);
         --finance-shadow-soft: 0 4px 18px rgba(24, 47, 83, 0.05);
 
@@ -418,12 +410,9 @@ interface MonthOption {
 
       .finance-header ion-title {
         color: var(--finance-primary-dark);
-
         font-size: 25px;
         font-weight: 800;
-
         text-align: center;
-
         letter-spacing: -0.5px;
       }
 
@@ -473,6 +462,7 @@ interface MonthOption {
         );
 
         border: 1px solid #e5eaf2;
+
         border-radius: 24px;
 
         overflow: hidden;
@@ -537,6 +527,7 @@ interface MonthOption {
         color: var(--finance-primary);
 
         font-size: 0.72rem;
+
         font-weight: 800;
 
         letter-spacing: 0.22em;
@@ -553,6 +544,7 @@ interface MonthOption {
         color: var(--finance-primary-dark);
 
         font-size: 4.1rem;
+
         line-height: 1;
 
         font-weight: 800;
@@ -566,6 +558,7 @@ interface MonthOption {
         margin-left: 7px;
 
         font-size: 1.35rem;
+
         font-weight: 500;
 
         color: var(--finance-text-soft);
@@ -588,6 +581,7 @@ interface MonthOption {
         color: var(--finance-text-soft);
 
         font-size: 0.9rem;
+
         font-weight: 500;
       }
 
@@ -627,8 +621,11 @@ interface MonthOption {
         min-height: 150px;
 
         display: flex;
+
         flex-direction: column;
+
         align-items: center;
+
         justify-content: center;
 
         text-align: center;
@@ -665,7 +662,9 @@ interface MonthOption {
 
       .stat-info {
         display: flex;
+
         flex-direction: column;
+
         align-items: center;
 
         gap: 5px;
@@ -675,6 +674,7 @@ interface MonthOption {
         color: var(--finance-text-soft);
 
         font-size: 0.66rem;
+
         font-weight: 800;
 
         letter-spacing: 0.12em;
@@ -684,6 +684,7 @@ interface MonthOption {
 
       .stat-value {
         font-size: 1.18rem;
+
         font-weight: 800;
 
         line-height: 1.1;
@@ -796,13 +797,17 @@ interface MonthOption {
         position: relative;
 
         display: flex;
+
         align-items: center;
+
         justify-content: space-between;
 
         width: 100%;
+
         min-height: 74px;
 
         padding: 10px;
+
         margin-bottom: 22px;
 
         box-sizing: border-box;
@@ -810,6 +815,7 @@ interface MonthOption {
         background: linear-gradient(135deg, #ffffff 0%, #f7faff 100%);
 
         border: 1px solid var(--finance-border);
+
         border-radius: 20px;
 
         box-shadow: var(--finance-shadow-soft);
@@ -838,12 +844,15 @@ interface MonthOption {
         flex: 0 0 44px;
 
         display: flex;
+
         align-items: center;
+
         justify-content: center;
 
         padding: 0;
 
         border: 1px solid var(--finance-border);
+
         border-radius: 14px;
 
         background: #ffffff;
@@ -871,7 +880,9 @@ interface MonthOption {
 
       .month-current {
         display: flex;
+
         align-items: center;
+
         justify-content: center;
 
         gap: 10px;
@@ -888,7 +899,9 @@ interface MonthOption {
         flex: 0 0 42px;
 
         display: flex;
+
         align-items: center;
+
         justify-content: center;
 
         border-radius: 13px;
@@ -916,6 +929,7 @@ interface MonthOption {
         color: var(--finance-muted);
 
         font-size: 9px;
+
         font-weight: 800;
 
         letter-spacing: 0.9px;
@@ -927,6 +941,7 @@ interface MonthOption {
         color: var(--finance-primary-dark);
 
         font-size: 18px;
+
         font-weight: 800;
 
         text-transform: capitalize;
@@ -944,7 +959,9 @@ interface MonthOption {
 
       .section-header {
         display: flex;
+
         align-items: center;
+
         justify-content: space-between;
 
         gap: 12px;
@@ -954,6 +971,7 @@ interface MonthOption {
 
       .section-title-wrapper {
         display: flex;
+
         align-items: center;
 
         gap: 10px;
@@ -968,7 +986,9 @@ interface MonthOption {
         flex: 0 0 40px;
 
         display: flex;
+
         align-items: center;
+
         justify-content: center;
 
         border-radius: 12px;
@@ -980,6 +1000,7 @@ interface MonthOption {
 
       .section-icon ion-icon {
         color: #ffffff;
+
         font-size: 21px;
       }
 
@@ -993,6 +1014,7 @@ interface MonthOption {
         color: var(--finance-text);
 
         font-size: 0.86rem;
+
         font-weight: 800;
 
         letter-spacing: 0.04em;
@@ -1011,7 +1033,7 @@ interface MonthOption {
       }
 
       /* =========================================================
-         SCROLL INTERNO DE ACTIVIDAD
+         SCROLL INTERNO
       ========================================================= */
 
       .ledger-scroll {
@@ -1020,6 +1042,7 @@ interface MonthOption {
         max-height: 520px;
 
         overflow-y: auto;
+
         overflow-x: hidden;
 
         padding-right: 4px;
@@ -1067,6 +1090,7 @@ interface MonthOption {
 
       .ledger-row {
         display: flex;
+
         align-items: center;
 
         gap: 12px;
@@ -1095,7 +1119,9 @@ interface MonthOption {
         flex: 0 0 46px;
 
         display: flex;
+
         align-items: center;
+
         justify-content: center;
 
         border-radius: 14px;
@@ -1107,11 +1133,13 @@ interface MonthOption {
 
       .activity-icon.income {
         background: var(--finance-green-bg);
+
         color: var(--finance-green);
       }
 
       .activity-icon.payment {
         background: var(--finance-orange-bg);
+
         color: var(--finance-orange);
       }
 
@@ -1121,6 +1149,7 @@ interface MonthOption {
 
       .ledger-main {
         display: flex;
+
         flex-direction: column;
 
         flex: 1;
@@ -1134,6 +1163,7 @@ interface MonthOption {
         color: var(--finance-text);
 
         font-size: 0.92rem;
+
         font-weight: 800;
 
         text-overflow: ellipsis;
@@ -1143,7 +1173,9 @@ interface MonthOption {
 
       .ledger-description {
         display: flex;
+
         align-items: center;
+
         flex-wrap: wrap;
 
         gap: 9px;
@@ -1157,6 +1189,7 @@ interface MonthOption {
 
       .data-item {
         display: inline-flex;
+
         align-items: center;
 
         gap: 4px;
@@ -1169,11 +1202,12 @@ interface MonthOption {
       }
 
       /* =========================================================
-         DURACIÓN DEL TRABAJO
+         DURACIÓN
       ========================================================= */
 
       .ledger-work-duration {
         display: inline-flex;
+
         align-items: center;
 
         width: fit-content;
@@ -1217,6 +1251,7 @@ interface MonthOption {
 
       .ledger-right {
         display: flex;
+
         align-items: center;
 
         gap: 7px;
@@ -1226,6 +1261,7 @@ interface MonthOption {
 
       .ledger-amount {
         font-size: 0.94rem;
+
         font-weight: 800;
 
         white-space: nowrap;
@@ -1247,8 +1283,11 @@ interface MonthOption {
 
       .empty-state {
         display: flex;
+
         flex-direction: column;
+
         align-items: center;
+
         justify-content: center;
 
         min-height: 280px;
@@ -1271,7 +1310,9 @@ interface MonthOption {
         height: 110px;
 
         display: flex;
+
         align-items: center;
+
         justify-content: center;
 
         margin-bottom: 16px;
@@ -1288,7 +1329,9 @@ interface MonthOption {
         height: 70px;
 
         display: flex;
+
         align-items: center;
+
         justify-content: center;
 
         border-radius: 20px;
@@ -1308,6 +1351,7 @@ interface MonthOption {
         color: var(--finance-text);
 
         font-size: 1rem;
+
         font-weight: 800;
       }
 
@@ -1592,12 +1636,19 @@ export class EmployeeFinanzasPage implements OnInit {
   constructor(private supabase: SupabaseService) {
     addIcons({
       "wallet-outline": walletOutline,
+
       "time-outline": timeOutline,
+
       "checkmark-circle-outline": checkmarkCircleOutline,
+
       "calendar-outline": calendarOutline,
+
       "cash-outline": cashOutline,
+
       "briefcase-outline": briefcaseOutline,
+
       "chevron-back-outline": chevronBackOutline,
+
       "chevron-forward-outline": chevronForwardOutline,
     });
   }
@@ -1611,6 +1662,7 @@ export class EmployeeFinanzasPage implements OnInit {
 
     const [history, settlements] = await Promise.all([
       this.supabase.getMyJobHistory(),
+
       this.supabase.getMySettlements(),
     ]);
 
@@ -1669,16 +1721,20 @@ export class EmployeeFinanzasPage implements OnInit {
     });
 
     /* =======================================================
-       TOTALES
-    ======================================================= */
-
-    this.calculateBalance();
-
-    /* =======================================================
        MESES
     ======================================================= */
 
     this.setAvailableMonths();
+
+    /*
+     * IMPORTANTE:
+     *
+     * Primero seleccionamos el mes.
+     * Después calculamos los totales
+     * de ese mes.
+     */
+
+    this.calculateBalance();
   }
 
   /* =========================================================
@@ -1686,18 +1742,21 @@ export class EmployeeFinanzasPage implements OnInit {
   ========================================================= */
 
   private detectWorkUnit(item: any): "horas" | "dias" {
-    /*
-     * Primero buscamos campos específicos de unidad.
-     */
-
     const possibleUnitValues = [
       item.work_unit,
+
       item.unit_type,
+
       item.duration_type,
+
       item.hours_or_days_type,
+
       item.work_type,
+
       item.payment_type,
+
       item.unit,
+
       item.duration_unit,
     ];
 
@@ -1721,14 +1780,11 @@ export class EmployeeFinanzasPage implements OnInit {
       }
     }
 
-    /*
-     * Si la vista guarda directamente un texto
-     * como "2 días" o "2 horas", también lo detectamos.
-     */
-
     const possibleTextValues = [
       item.hours_or_days,
+
       item.hours_days,
+
       item.duration,
     ];
 
@@ -1752,18 +1808,6 @@ export class EmployeeFinanzasPage implements OnInit {
       }
     }
 
-    /*
-     * Último recurso:
-     *
-     * Si tu vista actual no está devolviendo ningún campo
-     * que indique la unidad, usamos "horas" para no romper
-     * la pantalla.
-     *
-     * Si en tu base de datos tienes un campo concreto que
-     * indica "horas" o "días", esta función lo detectará
-     * automáticamente arriba.
-     */
-
     return "horas";
   }
 
@@ -1773,6 +1817,7 @@ export class EmployeeFinanzasPage implements OnInit {
 
   formatWorkAmount(
     value: number | null | undefined,
+
     unit: "horas" | "dias" | undefined,
   ): string {
     if (
@@ -1897,6 +1942,14 @@ export class EmployeeFinanzasPage implements OnInit {
     const previous = new Date(year, month - 2, 1);
 
     this.selectedMonth = this.formatMonthKey(previous);
+
+    /*
+     * MUY IMPORTANTE:
+     * recalculamos los totales
+     * del nuevo mes.
+     */
+
+    this.calculateBalance();
   }
 
   /* =========================================================
@@ -1913,42 +1966,58 @@ export class EmployeeFinanzasPage implements OnInit {
     const next = new Date(year, month, 1);
 
     this.selectedMonth = this.formatMonthKey(next);
+
+    /*
+     * MUY IMPORTANTE:
+     * recalculamos los totales
+     * del nuevo mes.
+     */
+
+    this.calculateBalance();
   }
 
   /* =========================================================
-     CALCULAR SALDOS
+     CALCULAR SALDOS DEL MES SELECCIONADO
   ========================================================= */
 
   private calculateBalance() {
     /*
-     * DINERO GENERADO
+     * IMPORTANTE:
      *
-     * Solamente trabajos.
+     * Ya NO utilizamos todos los trabajos
+     * y todos los pagos.
+     *
+     * Utilizamos solamente los del
+     * mes seleccionado.
      */
 
-    this.generated = this.jobs.reduce((total: number, job: FeedItem) => {
+    const monthJobs = this.filteredJobs;
+
+    const monthPayments = this.filteredPayments;
+
+    /* =======================================================
+       DINERO GENERADO EN EL MES
+    ======================================================= */
+
+    this.generated = monthJobs.reduce((total: number, job: FeedItem) => {
       const amount = Number(job.amount ?? 0);
 
       return Number.isFinite(amount) ? total + amount : total;
     }, 0);
 
-    /*
-     * DINERO COBRADO
-     *
-     * Solamente pagos.
-     */
+    /* =======================================================
+       DINERO COBRADO EN EL MES
+    ======================================================= */
 
-    this.paid = this.feed
-      .filter((item) => item.kind === "saldo")
-      .reduce((total: number, item: FeedItem) => {
-        const amount = Number(item.amount ?? 0);
+    this.paid = monthPayments.reduce((total: number, payment: FeedItem) => {
+      const amount = Number(payment.amount ?? 0);
 
-        return Number.isFinite(amount) ? total + amount : total;
-      }, 0);
+      return Number.isFinite(amount) ? total + amount : total;
+    }, 0);
 
-    /*
-     * PENDIENTE
-     */
+    /* =======================================================
+       DINERO PENDIENTE DEL MES
+    ======================================================= */
 
     this.pending = Math.max(0, this.generated - this.paid);
   }
@@ -1968,12 +2037,14 @@ export class EmployeeFinanzasPage implements OnInit {
 
     this.availableMonths = monthKeys.map((key) => ({
       key,
+
       label: this.formatMonthLabel(key),
     }));
 
     /*
      * Si existen movimientos,
-     * comenzamos en el más reciente.
+     * empezamos en el mes
+     * más reciente.
      */
 
     if (!this.selectedMonth && this.availableMonths.length > 0) {
@@ -2007,7 +2078,7 @@ export class EmployeeFinanzasPage implements OnInit {
      * YYYY-MM
      */
 
-    const match = dateValue.match(/^(\\d{4})-(\\d{2})/);
+    const match = dateValue.match(/^(\d{4})-(\d{2})/);
 
     if (match) {
       return `${match[1]}-${match[2]}`;
@@ -2096,7 +2167,7 @@ export class EmployeeFinanzasPage implements OnInit {
      * YYYY-MM-DD
      */
 
-    const match = value.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
     if (match) {
       return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));

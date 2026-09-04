@@ -26,6 +26,7 @@ import {
   calendarOutline,
   hourglassOutline,
   chevronForwardOutline,
+  chevronBackOutline,
 } from "ionicons/icons";
 
 import { SupabaseService } from "../../../services/supabase.service";
@@ -55,7 +56,6 @@ interface FinishedJob {
 @Component({
   selector: "app-employee-trabajos",
   standalone: true,
-
   imports: [
     EmployeeTabbarComponent,
     CommonModule,
@@ -67,7 +67,6 @@ interface FinishedJob {
     IonRefresher,
     IonRefresherContent,
   ],
-
   template: `
     <ion-header class="work-header">
       <ion-toolbar>
@@ -93,7 +92,37 @@ interface FinishedJob {
           </div>
         </div>
 
-        <!-- SELECTOR -->
+        <!-- SELECTOR DE MES -->
+        <div class="month-selector">
+          <button
+            type="button"
+            class="month-arrow"
+            (click)="previousMonth()"
+            aria-label="Mes anterior"
+          >
+            <ion-icon name="chevron-back-outline"></ion-icon>
+          </button>
+
+          <div class="month-center">
+            <ion-icon name="calendar-outline"></ion-icon>
+
+            <div>
+              <span>Mes seleccionado</span>
+              <strong>{{ currentMonthLabel }}</strong>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="month-arrow"
+            (click)="nextMonth()"
+            aria-label="Mes siguiente"
+          >
+            <ion-icon name="chevron-forward-outline"></ion-icon>
+          </button>
+        </div>
+
+        <!-- SELECTOR DE ESTADO -->
         <div class="status-selector">
           <button
             type="button"
@@ -102,9 +131,7 @@ interface FinishedJob {
             (click)="selectTab('confirmados')"
           >
             <ion-icon name="checkmark-circle-outline"></ion-icon>
-
             <span>Confirmados</span>
-
             <strong>{{ confirmedJobs.length }}</strong>
           </button>
 
@@ -115,10 +142,8 @@ interface FinishedJob {
             (click)="selectTab('finalizados')"
           >
             <ion-icon name="checkmark-done-circle-outline"></ion-icon>
-
             <span>Finalizados</span>
-
-            <strong>{{ finishedJobs.length }}</strong>
+            <strong>{{ filteredFinishedJobs.length }}</strong>
           </button>
         </div>
 
@@ -138,7 +163,6 @@ interface FinishedJob {
             </div>
           </div>
 
-          <!-- SCROLL INTERNO -->
           <div
             class="jobs-scroll"
             *ngIf="confirmedJobs.length > 0; else noConfirmed"
@@ -270,20 +294,23 @@ interface FinishedJob {
 
             <div>
               <h2>Trabajos finalizados</h2>
-              <p>Trabajos que ya has realizado</p>
+
+              <p>Trabajos realizados en {{ currentMonthLabel }}</p>
             </div>
           </div>
 
           <!-- SCROLL INTERNO -->
+
           <div
             class="jobs-scroll finished-scroll"
-            *ngIf="finishedJobs.length > 0; else noFinished"
+            *ngIf="filteredFinishedJobs.length > 0; else noFinished"
           >
             <article
               class="job-card finished-card"
-              *ngFor="let job of finishedJobs"
+              *ngFor="let job of filteredFinishedJobs"
             >
               <!-- PARTE PRINCIPAL -->
+
               <div class="finished-main">
                 <div class="finished-job-left">
                   <div class="job-icon finished-job-icon">
@@ -297,12 +324,14 @@ interface FinishedJob {
 
                     <div class="status-pill finished-pill">
                       <ion-icon name="checkmark-done-circle-outline"></ion-icon>
+
                       Finalizado
                     </div>
                   </div>
                 </div>
 
                 <!-- COBRO -->
+
                 <div class="amount-box">
                   <span>Cobro</span>
 
@@ -311,6 +340,7 @@ interface FinishedJob {
               </div>
 
               <!-- BOTON DETALLES -->
+
               <button
                 type="button"
                 class="details-button"
@@ -327,12 +357,14 @@ interface FinishedJob {
               </button>
 
               <!-- DETALLES DESPLEGABLES -->
+
               <div
                 class="finished-details-wrapper"
                 [class.open]="job.detailsOpen"
               >
                 <div class="finished-details">
                   <!-- FECHA -->
+
                   <div class="finished-detail">
                     <div class="finished-detail-icon">
                       <ion-icon name="calendar-outline"></ion-icon>
@@ -348,6 +380,7 @@ interface FinishedJob {
                   </div>
 
                   <!-- HORA -->
+
                   <div class="finished-detail">
                     <div class="finished-detail-icon">
                       <ion-icon name="time-outline"></ion-icon>
@@ -363,6 +396,7 @@ interface FinishedJob {
                   </div>
 
                   <!-- HORAS -->
+
                   <div class="finished-detail">
                     <div class="finished-detail-icon">
                       <ion-icon name="hourglass-outline"></ion-icon>
@@ -378,6 +412,7 @@ interface FinishedJob {
                   </div>
 
                   <!-- PERSONAS -->
+
                   <div class="finished-detail">
                     <div class="finished-detail-icon">
                       <ion-icon name="people-outline"></ion-icon>
@@ -402,9 +437,13 @@ interface FinishedJob {
                 <ion-icon name="checkmark-done-circle-outline"></ion-icon>
               </div>
 
-              <h3>No tienes trabajos finalizados</h3>
+              <h3>No tienes trabajos finalizados este mes</h3>
 
-              <p>Los trabajos que termines aparecerán aquí.</p>
+              <p>
+                Los trabajos que termines en
+                {{ currentMonthLabel }}
+                aparecerán aquí.
+              </p>
             </div>
           </ng-template>
         </section>
@@ -412,6 +451,7 @@ interface FinishedJob {
     </ion-content>
 
     <!-- TABBAR FUERA DEL ION-CONTENT -->
+
     <app-employee-tabbar></app-employee-tabbar>
   `,
 
@@ -518,19 +558,132 @@ interface FinishedJob {
       }
 
       /* =====================================================
-         SELECTOR
+         SELECTOR DE MES
+      ===================================================== */
+
+      .month-selector {
+        width: 100%;
+        min-height: 66px;
+
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        padding: 6px;
+
+        box-sizing: border-box;
+
+        margin-bottom: 14px;
+
+        box-shadow: 0 6px 20px rgba(20, 40, 70, 0.05);
+      }
+
+      .month-center {
+        flex: 1;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        gap: 10px;
+
+        text-align: left;
+      }
+
+      .month-center > ion-icon {
+        width: 40px;
+        height: 40px;
+
+        padding: 9px;
+
+        box-sizing: border-box;
+
+        border-radius: 12px;
+
+        background: var(--primary-blue-light);
+        color: var(--primary-blue);
+
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .month-center span {
+        display: block;
+
+        color: var(--text-light);
+
+        font-size: 10px;
+        font-weight: 700;
+
+        margin-bottom: 2px;
+      }
+
+      .month-center strong {
+        display: block;
+
+        color: var(--text-dark);
+
+        font-size: 16px;
+        font-weight: 850;
+
+        text-transform: capitalize;
+      }
+
+      .month-arrow {
+        width: 46px;
+        height: 46px;
+
+        border: 0;
+        border-radius: 13px;
+
+        background: #f5f8fc;
+
+        color: var(--primary-blue);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        cursor: pointer;
+
+        transition:
+          background 0.2s ease,
+          transform 0.15s ease;
+      }
+
+      .month-arrow ion-icon {
+        font-size: 22px;
+      }
+
+      .month-arrow:hover {
+        background: var(--primary-blue-light);
+      }
+
+      .month-arrow:active {
+        transform: scale(0.94);
+      }
+
+      /* =====================================================
+         SELECTOR ESTADOS
       ===================================================== */
 
       .status-selector {
         background: #ffffff;
         border-radius: 18px;
+
         padding: 6px;
 
         display: grid;
         grid-template-columns: 1fr 1fr;
+
         gap: 6px;
 
         border: 1px solid var(--border);
+
         box-shadow: 0 6px 20px rgba(20, 40, 70, 0.05);
 
         margin-bottom: 30px;
@@ -549,11 +702,13 @@ interface FinishedJob {
         justify-content: center;
 
         gap: 9px;
+
         padding: 0 14px;
 
         cursor: pointer;
 
         font-family: inherit;
+
         font-size: 14px;
         font-weight: 800;
 
@@ -575,6 +730,7 @@ interface FinishedJob {
       .status-button strong {
         min-width: 25px;
         height: 25px;
+
         border-radius: 50%;
 
         display: flex;
@@ -600,6 +756,7 @@ interface FinishedJob {
       .confirmed-button.active {
         background: var(--primary-blue);
         color: #ffffff;
+
         box-shadow: 0 7px 18px rgba(23, 105, 224, 0.22);
       }
 
@@ -624,6 +781,7 @@ interface FinishedJob {
       .finished-button.active {
         background: var(--green);
         color: #ffffff;
+
         box-shadow: 0 7px 18px rgba(32, 164, 100, 0.22);
       }
 
@@ -655,13 +813,16 @@ interface FinishedJob {
       .section-heading {
         display: flex;
         align-items: center;
+
         gap: 13px;
+
         margin-bottom: 17px;
       }
 
       .section-title-box {
         width: 43px;
         height: 43px;
+
         border-radius: 13px;
 
         display: flex;
@@ -687,15 +848,20 @@ interface FinishedJob {
 
       .section-heading h2 {
         margin: 0;
+
         color: var(--text-dark);
+
         font-size: 18px;
         font-weight: 850;
+
         letter-spacing: -0.25px;
       }
 
       .section-heading p {
         margin: 3px 0 0;
+
         color: var(--text-medium);
+
         font-size: 13px;
       }
 
@@ -706,12 +872,15 @@ interface FinishedJob {
       .jobs-scroll {
         display: flex;
         flex-direction: column;
+
         gap: 16px;
 
         width: 100%;
+
         max-height: 620px;
 
         padding: 4px 6px 18px 3px;
+
         margin: 0;
 
         box-sizing: border-box;
@@ -720,6 +889,7 @@ interface FinishedJob {
         overflow-x: hidden;
 
         overscroll-behavior: contain;
+
         -webkit-overflow-scrolling: touch;
 
         scrollbar-width: thin;
@@ -749,11 +919,13 @@ interface FinishedJob {
 
       .job-card {
         width: 100%;
+
         box-sizing: border-box;
 
         background: #ffffff;
 
         border-radius: 22px;
+
         border: 1px solid var(--border);
 
         padding: 20px;
@@ -771,13 +943,16 @@ interface FinishedJob {
 
       .card-top {
         display: flex;
+
         align-items: flex-start;
+
         gap: 13px;
       }
 
       .job-icon {
         width: 49px;
         height: 49px;
+
         border-radius: 15px;
 
         display: flex;
@@ -803,6 +978,7 @@ interface FinishedJob {
 
       .job-main {
         min-width: 0;
+
         flex: 1;
       }
 
@@ -812,6 +988,7 @@ interface FinishedJob {
         color: var(--text-dark);
 
         font-size: 19px;
+
         font-weight: 850;
 
         text-transform: capitalize;
@@ -819,6 +996,7 @@ interface FinishedJob {
 
       .status-pill {
         display: inline-flex;
+
         align-items: center;
 
         gap: 5px;
@@ -828,6 +1006,7 @@ interface FinishedJob {
         border-radius: 20px;
 
         font-size: 11px;
+
         font-weight: 800;
       }
 
@@ -851,7 +1030,9 @@ interface FinishedJob {
 
       .job-divider {
         height: 1px;
+
         background: var(--border);
+
         margin: 19px 0;
       }
 
@@ -861,14 +1042,19 @@ interface FinishedJob {
 
       .detail-grid {
         display: grid;
+
         grid-template-columns: 1fr 1fr;
+
         gap: 17px 14px;
       }
 
       .detail-item {
         display: flex;
+
         align-items: flex-start;
+
         gap: 10px;
+
         min-width: 0;
       }
 
@@ -879,9 +1065,11 @@ interface FinishedJob {
       .detail-icon {
         width: 35px;
         height: 35px;
+
         border-radius: 10px;
 
         background: #f4f7fb;
+
         color: var(--primary-blue);
 
         display: flex;
@@ -902,6 +1090,7 @@ interface FinishedJob {
         color: var(--text-light);
 
         font-size: 11px;
+
         font-weight: 700;
 
         margin-bottom: 3px;
@@ -914,6 +1103,7 @@ interface FinishedJob {
         color: var(--text-dark);
 
         font-size: 13px;
+
         font-weight: 750;
 
         line-height: 1.35;
@@ -922,12 +1112,14 @@ interface FinishedJob {
       }
 
       /* =====================================================
-         FINALIZADO - PARTE PRINCIPAL
+         FINALIZADO
       ===================================================== */
 
       .finished-main {
         display: flex;
+
         align-items: center;
+
         justify-content: space-between;
 
         gap: 15px;
@@ -935,11 +1127,13 @@ interface FinishedJob {
 
       .finished-job-left {
         display: flex;
+
         align-items: flex-start;
 
         gap: 13px;
 
         min-width: 0;
+
         flex: 1;
       }
 
@@ -949,7 +1143,9 @@ interface FinishedJob {
 
       .amount-box {
         text-align: right;
+
         padding-left: 10px;
+
         flex-shrink: 0;
       }
 
@@ -959,6 +1155,7 @@ interface FinishedJob {
         color: var(--text-light);
 
         font-size: 11px;
+
         font-weight: 700;
 
         margin-bottom: 2px;
@@ -968,6 +1165,7 @@ interface FinishedJob {
         color: var(--green);
 
         font-size: 20px;
+
         font-weight: 900;
 
         white-space: nowrap;
@@ -985,6 +1183,7 @@ interface FinishedJob {
         padding: 11px 13px;
 
         border: 1px solid var(--border);
+
         border-radius: 12px;
 
         background: #f8fafc;
@@ -992,12 +1191,15 @@ interface FinishedJob {
         color: var(--text-dark);
 
         display: flex;
+
         align-items: center;
+
         justify-content: space-between;
 
         font-family: inherit;
 
         font-size: 12px;
+
         font-weight: 800;
 
         cursor: pointer;
@@ -1019,6 +1221,7 @@ interface FinishedJob {
 
       .details-button ion-icon {
         font-size: 18px;
+
         transition: transform 0.25s ease;
       }
 
@@ -1053,6 +1256,7 @@ interface FinishedJob {
 
       .finished-details {
         min-height: 0;
+
         overflow: hidden;
 
         display: grid;
@@ -1066,12 +1270,15 @@ interface FinishedJob {
 
       .finished-details-wrapper.open .finished-details {
         padding-top: 18px;
+
         border-top: 1px solid var(--border);
       }
 
       .finished-detail {
         display: flex;
+
         align-items: flex-start;
+
         gap: 10px;
       }
 
@@ -1082,6 +1289,7 @@ interface FinishedJob {
         border-radius: 10px;
 
         background: var(--green-light);
+
         color: var(--green);
 
         display: flex;
@@ -1103,6 +1311,7 @@ interface FinishedJob {
         background: #ffffff;
 
         border: 1px solid var(--border);
+
         border-radius: 22px;
 
         padding: 42px 24px;
@@ -1145,6 +1354,7 @@ interface FinishedJob {
         color: var(--text-dark);
 
         font-size: 17px;
+
         font-weight: 800;
       }
 
@@ -1154,6 +1364,7 @@ interface FinishedJob {
         color: var(--text-medium);
 
         font-size: 13px;
+
         line-height: 1.5;
       }
 
@@ -1177,6 +1388,7 @@ interface FinishedJob {
         margin: 0 !important;
 
         visibility: visible !important;
+
         opacity: 1 !important;
       }
 
@@ -1187,6 +1399,7 @@ interface FinishedJob {
       @media (max-width: 600px) {
         .page-wrap {
           width: calc(100% - 22px);
+
           padding-top: 20px;
         }
 
@@ -1196,6 +1409,29 @@ interface FinishedJob {
 
         .intro p {
           font-size: 12px;
+        }
+
+        .month-selector {
+          min-height: 62px;
+        }
+
+        .month-arrow {
+          width: 42px;
+          height: 42px;
+        }
+
+        .month-center > ion-icon {
+          width: 36px;
+          height: 36px;
+          padding: 8px;
+        }
+
+        .month-center span {
+          font-size: 9px;
+        }
+
+        .month-center strong {
+          font-size: 14px;
         }
 
         .status-button {
@@ -1212,10 +1448,6 @@ interface FinishedJob {
           font-size: 19px;
         }
 
-        /*
-         * En móvil el contenedor sigue teniendo
-         * su propio scroll y no la página.
-         */
         .jobs-scroll {
           max-height: 60vh;
 
@@ -1224,7 +1456,9 @@ interface FinishedJob {
 
         .job-card {
           width: 100%;
+
           padding: 17px;
+
           border-radius: 19px;
         }
 
@@ -1274,6 +1508,7 @@ interface FinishedJob {
         .job-icon {
           width: 43px;
           height: 43px;
+
           border-radius: 13px;
         }
 
@@ -1296,6 +1531,14 @@ interface FinishedJob {
         .details-button {
           font-size: 11px;
         }
+
+        .month-center {
+          gap: 6px;
+        }
+
+        .month-center strong {
+          font-size: 13px;
+        }
       }
     `,
   ],
@@ -1305,6 +1548,14 @@ export class EmployeeTrabajosPage implements OnInit {
 
   confirmedJobs: ConfirmedJob[] = [];
   finishedJobs: FinishedJob[] = [];
+
+  /**
+   * Mes que estamos visualizando.
+   *
+   * Ejemplo:
+   * 2026-09
+   */
+  selectedMonth = "";
 
   constructor(private supabase: SupabaseService) {
     addIcons({
@@ -1320,24 +1571,151 @@ export class EmployeeTrabajosPage implements OnInit {
       calendarOutline,
       hourglassOutline,
       chevronForwardOutline,
+      chevronBackOutline,
     });
   }
 
   async ngOnInit() {
+    this.initializeSelectedMonth();
+
     await this.load();
   }
 
   /**
-   * Carga únicamente los trabajos correspondientes
-   * al empleado que tiene la sesión iniciada.
+   * Inicializa el selector en el mes actual.
+   */
+  private initializeSelectedMonth() {
+    const now = new Date();
+
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+
+    this.selectedMonth = `${year}-${month}`;
+  }
+
+  /**
+   * Nombre visible del mes.
+   *
+   * Ejemplo:
+   * septiembre de 2026
+   */
+  get currentMonthLabel(): string {
+    if (!this.selectedMonth) {
+      return "Sin mes";
+    }
+
+    const parts = this.selectedMonth.split("-");
+
+    if (parts.length !== 2) {
+      return this.selectedMonth;
+    }
+
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+
+    if (!year || !month) {
+      return this.selectedMonth;
+    }
+
+    const date = new Date(year, month - 1, 1);
+
+    return date.toLocaleDateString("es-ES", {
+      month: "long",
+      year: "numeric",
+    });
+  }
+
+  /**
+   * TRABAJOS FINALIZADOS DEL MES SELECCIONADO.
+   *
+   * Este getter es el que hace que al cambiar de mes
+   * cambie automáticamente la lista.
+   */
+  get filteredFinishedJobs(): FinishedJob[] {
+    if (!this.selectedMonth) {
+      return [];
+    }
+
+    return this.finishedJobs.filter((job) => {
+      const jobMonth = this.getMonthFromDate(job.date);
+
+      return jobMonth === this.selectedMonth;
+    });
+  }
+
+  /**
+   * Obtiene YYYY-MM de una fecha.
+   *
+   * Ejemplo:
+   * 2026-09-03 -> 2026-09
+   */
+  private getMonthFromDate(dateValue: string | null | undefined): string {
+    if (!dateValue) {
+      return "";
+    }
+
+    const value = String(dateValue).trim();
+
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+    if (match) {
+      return `${match[1]}-${match[2]}`;
+    }
+
+    const matchMonth = value.match(/^(\d{4})-(\d{2})/);
+
+    if (matchMonth) {
+      return `${matchMonth[1]}-${matchMonth[2]}`;
+    }
+
+    return "";
+  }
+
+  /**
+   * MES ANTERIOR.
+   */
+  previousMonth() {
+    if (!this.selectedMonth) {
+      this.initializeSelectedMonth();
+      return;
+    }
+
+    const [year, month] = this.selectedMonth.split("-").map(Number);
+
+    const date = new Date(year, month - 2, 1);
+
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, "0");
+
+    this.selectedMonth = `${newYear}-${newMonth}`;
+  }
+
+  /**
+   * MES SIGUIENTE.
+   */
+  nextMonth() {
+    if (!this.selectedMonth) {
+      this.initializeSelectedMonth();
+      return;
+    }
+
+    const [year, month] = this.selectedMonth.split("-").map(Number);
+
+    const date = new Date(year, month, 1);
+
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, "0");
+
+    this.selectedMonth = `${newYear}-${newMonth}`;
+  }
+
+  /**
+   * Carga los trabajos del empleado.
    */
   async load() {
     try {
       /**
        * TRABAJOS CONFIRMADOS
-       *
-       * Este método ya devuelve los trabajos disponibles
-       * para el empleado actual.
        */
       const availableJobs = await this.supabase.getAvailableJobsForEmployee();
 
@@ -1367,8 +1745,8 @@ export class EmployeeTrabajosPage implements OnInit {
       /**
        * TRABAJOS FINALIZADOS
        *
-       * getMyJobHistory() devuelve únicamente el historial
-       * del empleado que está conectado.
+       * getMyJobHistory() devuelve únicamente
+       * el historial del empleado conectado.
        */
       const history = await this.supabase.getMyJobHistory();
 
@@ -1424,14 +1802,14 @@ export class EmployeeTrabajosPage implements OnInit {
   }
 
   /**
-   * Abre/cierra los detalles de un trabajo finalizado.
+   * Abre/cierra los detalles de un trabajo.
    */
   toggleDetails(job: FinishedJob) {
     job.detailsOpen = !job.detailsOpen;
   }
 
   /**
-   * Actualiza la información mediante pull-to-refresh.
+   * Actualiza mediante pull-to-refresh.
    */
   async refresh(event: any) {
     await this.load();
