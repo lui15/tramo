@@ -1,0 +1,7 @@
+{
+  "name": "tramo",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
