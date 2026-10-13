@@ -1,5 +1,5 @@
 [build]
-  command = "ionic build"
+  command = "npx ionic build"
   publish = "www/browser"
 
 [[redirects]]
