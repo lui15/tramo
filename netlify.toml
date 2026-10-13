@@ -1,5 +1,5 @@
 [build]
-  command = "ionic build"
+  command = "node ./node_modules/@angular/cli/bin/ng.js build"
   publish = "www/browser"
 
 [[redirects]]
