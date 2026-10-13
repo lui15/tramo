@@ -1,5 +1,5 @@
 [build]
-  command = "npx ionic build"
+  command = "node node_modules/@ionic/cli/bin/ionic build"
   publish = "www/browser"
 
 [[redirects]]
