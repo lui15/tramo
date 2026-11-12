@@ -1,0 +1,11 @@
+# Dependencias y cachés (se regeneran con npm install / ng build)
+node_modules/
+.angular/
+www/
+
+# Configuración de Firebase del móvil (no se sube)
+android/app/google-services.json
+
+# Varios
+*.log
+.DS_Store

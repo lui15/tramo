@@ -1,15 +1,21 @@
 import { Component } from "@angular/core";
 import { IonRouterOutlet } from "@ionic/angular/standalone";
-import { AdminHeaderComponent } from "./admin-header.component";
 
+// Contenedor de las pantallas del rol. Cada pantalla trae su propia
+// cabecera (app-page-header) y su barra inferior.
 @Component({
   selector: "app-admin-layout",
   standalone: true,
-  imports: [IonRouterOutlet, AdminHeaderComponent],
-  template: `
-    <app-admin-header></app-admin-header>
-
-    <ion-router-outlet></ion-router-outlet>
-  `,
+  imports: [IonRouterOutlet],
+  template: `<ion-router-outlet></ion-router-outlet>`,
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    `,
+  ],
 })
 export class AdminLayoutComponent {}

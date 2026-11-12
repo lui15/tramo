@@ -9,6 +9,7 @@ import {
   IonIcon,
   IonRefresher,
   IonRefresherContent,
+  IonModal,
 } from "@ionic/angular/standalone";
 
 import { addIcons } from "ionicons";
@@ -27,9 +28,13 @@ import {
   hourglassOutline,
   chevronForwardOutline,
   chevronBackOutline,
+  flagOutline,
+  alertCircleOutline,
+  closeOutline,
 } from "ionicons/icons";
 
-import { SupabaseService } from "../../../services/supabase.service";
+import { SupabaseService, JOB_STATUS_LABELS } from "../../../services/supabase.service";
+import { JobCloseFormComponent } from "../../../components/job-close-form.component";
 import { EmployeeTabbarComponent } from "../../../components/employee-tabbar.component";
 
 interface ConfirmedJob {
@@ -40,6 +45,11 @@ interface ConfirmedJob {
   address: string;
   startTime: string;
   workerName: string;
+  jobDate: string;
+  status: string;
+  encargadoId: string | null;
+  returnReason: string | null;
+  raw: any;
 }
 
 interface FinishedJob {
@@ -53,10 +63,13 @@ interface FinishedJob {
   detailsOpen?: boolean;
 }
 
+import { PageHeaderComponent } from "../../../components/page-header.component";
+
 @Component({
   selector: "app-employee-trabajos",
   standalone: true,
   imports: [
+    PageHeaderComponent,
     EmployeeTabbarComponent,
     CommonModule,
     IonContent,
@@ -66,13 +79,11 @@ interface FinishedJob {
     IonIcon,
     IonRefresher,
     IonRefresherContent,
+    IonModal,
+    JobCloseFormComponent,
   ],
   template: `
-    <ion-header class="work-header">
-      <ion-toolbar>
-        <ion-title>Trabajos</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <app-page-header title="Trabajos" subtitle="Mis servicios"></app-page-header>
 
     <ion-content class="work-content">
       <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
@@ -93,207 +104,31 @@ interface FinishedJob {
         </div>
 
         <!-- SELECTOR DE MES -->
-        <div class="month-selector">
-          <button
-            type="button"
-            class="month-arrow"
-            (click)="previousMonth()"
-            aria-label="Mes anterior"
-          >
+        <section class="t-month">
+          <button type="button" class="t-month-arrow" (click)="previousMonth()" aria-label="Mes anterior">
             <ion-icon name="chevron-back-outline"></ion-icon>
           </button>
-
-          <div class="month-center">
-            <ion-icon name="calendar-outline"></ion-icon>
-
-            <div>
-              <span>Mes seleccionado</span>
-              <strong>{{ currentMonthLabel }}</strong>
-            </div>
+          <div class="t-month-current">
+            <strong>{{ monthName }}</strong>
+            <span>{{ selectedMonth.slice(0, 4) }}</span>
           </div>
-
-          <button
-            type="button"
-            class="month-arrow"
-            (click)="nextMonth()"
-            aria-label="Mes siguiente"
-          >
+          <button type="button" class="t-month-arrow" (click)="nextMonth()" aria-label="Mes siguiente">
             <ion-icon name="chevron-forward-outline"></ion-icon>
           </button>
-        </div>
-
-        <!-- SELECTOR DE ESTADO -->
-        <div class="status-selector">
-          <button
-            type="button"
-            class="status-button confirmed-button"
-            [class.active]="activeTab === 'confirmados'"
-            (click)="selectTab('confirmados')"
-          >
-            <ion-icon name="checkmark-circle-outline"></ion-icon>
-            <span>Confirmados</span>
-            <strong>{{ confirmedJobs.length }}</strong>
-          </button>
-
-          <button
-            type="button"
-            class="status-button finished-button"
-            [class.active]="activeTab === 'finalizados'"
-            (click)="selectTab('finalizados')"
-          >
-            <ion-icon name="checkmark-done-circle-outline"></ion-icon>
-            <span>Finalizados</span>
-            <strong>{{ filteredFinishedJobs.length }}</strong>
-          </button>
-        </div>
-
-        <!-- ================================================= -->
-        <!-- CONFIRMADOS -->
-        <!-- ================================================= -->
-
-        <section *ngIf="activeTab === 'confirmados'" class="jobs-section">
-          <div class="section-heading">
-            <div class="section-title-box confirmed-title-box">
-              <ion-icon name="checkmark-circle-outline"></ion-icon>
-            </div>
-
-            <div>
-              <h2>Trabajos confirmados</h2>
-              <p>Trabajos que tienes asignados</p>
-            </div>
-          </div>
-
-          <div
-            class="jobs-scroll"
-            *ngIf="confirmedJobs.length > 0; else noConfirmed"
-          >
-            <article
-              class="job-card confirmed-card"
-              *ngFor="let job of confirmedJobs"
-            >
-              <div class="card-top">
-                <div class="job-icon confirmed-job-icon">
-                  <ion-icon name="briefcase-outline"></ion-icon>
-                </div>
-
-                <div class="job-main">
-                  <h3>
-                    {{ job.jobType || "Trabajo" | titlecase }}
-                  </h3>
-
-                  <div class="status-pill confirmed-pill">
-                    <ion-icon name="checkmark-circle-outline"></ion-icon>
-                    Confirmado
-                  </div>
-                </div>
-              </div>
-
-              <div class="job-divider"></div>
-
-              <div class="detail-grid">
-                <!-- CLIENTE -->
-                <div class="detail-item">
-                  <div class="detail-icon">
-                    <ion-icon name="person-outline"></ion-icon>
-                  </div>
-
-                  <div>
-                    <span>Cliente</span>
-
-                    <strong>
-                      {{ job.clientName || "No disponible" }}
-                    </strong>
-                  </div>
-                </div>
-
-                <!-- TELEFONO -->
-                <div class="detail-item">
-                  <div class="detail-icon">
-                    <ion-icon name="call-outline"></ion-icon>
-                  </div>
-
-                  <div>
-                    <span>Teléfono</span>
-
-                    <strong>
-                      {{ job.clientPhone || "No disponible" }}
-                    </strong>
-                  </div>
-                </div>
-
-                <!-- UBICACION -->
-                <div class="detail-item full-width">
-                  <div class="detail-icon">
-                    <ion-icon name="location-outline"></ion-icon>
-                  </div>
-
-                  <div>
-                    <span>Ubicación</span>
-
-                    <strong>
-                      {{ job.address || "No disponible" }}
-                    </strong>
-                  </div>
-                </div>
-
-                <!-- HORA -->
-                <div class="detail-item">
-                  <div class="detail-icon">
-                    <ion-icon name="time-outline"></ion-icon>
-                  </div>
-
-                  <div>
-                    <span>Hora del trabajo</span>
-
-                    <strong>
-                      {{ formatTime(job.startTime) }}
-                    </strong>
-                  </div>
-                </div>
-
-                <!-- COMPAÑERO -->
-                <div class="detail-item">
-                  <div class="detail-icon">
-                    <ion-icon name="people-outline"></ion-icon>
-                  </div>
-
-                  <div>
-                    <span>Trabajarás con</span>
-
-                    <strong>
-                      {{ job.workerName || "No indicado" }}
-                    </strong>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <ng-template #noConfirmed>
-            <div class="empty-state">
-              <div class="empty-icon confirmed-empty">
-                <ion-icon name="checkmark-circle-outline"></ion-icon>
-              </div>
-
-              <h3>No tienes trabajos confirmados</h3>
-
-              <p>Cuando tengas un trabajo confirmado aparecerá aquí.</p>
-            </div>
-          </ng-template>
         </section>
 
         <!-- ================================================= -->
         <!-- FINALIZADOS -->
         <!-- ================================================= -->
 
-        <section *ngIf="activeTab === 'finalizados'" class="jobs-section">
+        <section class="jobs-section">
           <div class="section-heading">
             <div class="section-title-box finished-title-box">
               <ion-icon name="checkmark-done-circle-outline"></ion-icon>
             </div>
 
             <div>
-              <h2>Trabajos finalizados</h2>
+              <h2>Trabajos realizados</h2>
 
               <p>Trabajos realizados en {{ currentMonthLabel }}</p>
             </div>
@@ -452,26 +287,93 @@ interface FinishedJob {
 
     <!-- TABBAR FUERA DEL ION-CONTENT -->
 
+    <ion-modal [isOpen]="!!closing" (didDismiss)="closing = null">
+      <ng-template>
+        <ion-content>
+          <div class="jf-modal-head">
+            <h2>Trabajo terminado</h2>
+            <button type="button" (click)="closing = null" aria-label="Cerrar">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
+          </div>
+          <div style="padding: 0 16px">
+            <app-job-close-form
+              *ngIf="closing"
+              [job]="closing"
+              (saved)="afterClose()"
+              (cancel)="closing = null"
+            ></app-job-close-form>
+          </div>
+        </ion-content>
+      </ng-template>
+    </ion-modal>
+
     <app-employee-tabbar></app-employee-tabbar>
   `,
 
   styles: [
     `
+      .close-zone {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: var(--t-warning-soft);
+        color: var(--t-warning);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .close-zone ion-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .close-zone strong {
+        display: block;
+        font-size: 14px;
+      }
+      .close-zone.warn {
+        background: var(--t-danger-soft);
+        color: var(--t-danger);
+      }
+      .close-btn {
+        width: 100%;
+        margin-top: 14px;
+        min-height: 50px;
+        border: 0;
+        border-radius: 16px;
+        background: var(--t-primary);
+        color: var(--t-on-primary);
+        font: inherit;
+        font-size: 15px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+      .close-btn ion-icon {
+        font-size: 19px;
+      }
+
       :host {
-        --primary-blue: #1769e0;
-        --primary-blue-dark: #0d4fae;
-        --primary-blue-light: #eaf3ff;
+        --primary-blue: var(--t-primary);
+        --primary-blue-dark: var(--t-primary-strong);
+        --primary-blue-light: var(--t-primary-soft);
 
-        --green: #20a464;
-        --green-dark: #16824e;
-        --green-light: #eaf9f1;
+        --green: var(--t-success);
+        --green-dark: var(--t-success);
+        --green-light: var(--t-success-soft);
 
-        --text-dark: #182433;
-        --text-medium: #667085;
-        --text-light: #98a2b3;
+        --text-dark: var(--t-text);
+        --text-medium: var(--t-text-2);
+        --text-light: var(--t-muted);
 
-        --border: #e8edf3;
-        --page-bg: #f6f8fb;
+        --border: var(--t-border);
+        --page-bg: var(--t-surface-2);
 
         display: block;
         min-height: 100%;
@@ -487,7 +389,7 @@ interface FinishedJob {
       }
 
       .work-header ion-toolbar {
-        --background: #ffffff;
+        --background: var(--t-surface);
         --border-width: 0;
         --min-height: 64px;
       }
@@ -565,7 +467,7 @@ interface FinishedJob {
         width: 100%;
         min-height: 66px;
 
-        background: #ffffff;
+        background: var(--t-surface);
         border: 1px solid var(--border);
         border-radius: 18px;
 
@@ -640,7 +542,7 @@ interface FinishedJob {
         border: 0;
         border-radius: 13px;
 
-        background: #f5f8fc;
+        background: var(--t-surface-2);
 
         color: var(--primary-blue);
 
@@ -650,8 +552,7 @@ interface FinishedJob {
 
         cursor: pointer;
 
-        transition:
-          background 0.2s ease,
+        transition: background 0.2s ease,
           transform 0.15s ease;
       }
 
@@ -672,7 +573,7 @@ interface FinishedJob {
       ===================================================== */
 
       .status-selector {
-        background: #ffffff;
+        background: var(--t-surface);
         border-radius: 18px;
 
         padding: 6px;
@@ -695,7 +596,7 @@ interface FinishedJob {
         border: 0;
         border-radius: 14px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         display: flex;
         align-items: center;
@@ -712,8 +613,7 @@ interface FinishedJob {
         font-size: 14px;
         font-weight: 800;
 
-        transition:
-          background 0.2s ease,
+        transition: background 0.2s ease,
           color 0.2s ease,
           transform 0.15s ease,
           box-shadow 0.2s ease;
@@ -893,7 +793,7 @@ interface FinishedJob {
         -webkit-overflow-scrolling: touch;
 
         scrollbar-width: thin;
-        scrollbar-color: #cbd5e1 transparent;
+        scrollbar-color: var(--t-border) transparent;
       }
 
       .jobs-scroll::-webkit-scrollbar {
@@ -905,12 +805,12 @@ interface FinishedJob {
       }
 
       .jobs-scroll::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: var(--t-border);
         border-radius: 20px;
       }
 
       .jobs-scroll::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+        background: var(--t-muted);
       }
 
       /* =====================================================
@@ -922,7 +822,7 @@ interface FinishedJob {
 
         box-sizing: border-box;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         border-radius: 22px;
 
@@ -1068,7 +968,7 @@ interface FinishedJob {
 
         border-radius: 10px;
 
-        background: #f4f7fb;
+        background: var(--t-surface-2);
 
         color: var(--primary-blue);
 
@@ -1186,7 +1086,7 @@ interface FinishedJob {
 
         border-radius: 12px;
 
-        background: #f8fafc;
+        background: var(--t-surface-2);
 
         color: var(--text-dark);
 
@@ -1204,15 +1104,14 @@ interface FinishedJob {
 
         cursor: pointer;
 
-        transition:
-          background 0.2s ease,
+        transition: background 0.2s ease,
           border-color 0.2s ease,
           transform 0.15s ease;
       }
 
       .details-button:hover {
-        background: #f1f5f9;
-        border-color: #d9e1ea;
+        background: var(--t-surface-2);
+        border-color: var(--t-border-strong);
       }
 
       .details-button:active {
@@ -1240,8 +1139,7 @@ interface FinishedJob {
 
         opacity: 0;
 
-        transition:
-          grid-template-rows 0.3s ease,
+        transition: grid-template-rows 0.3s ease,
           opacity 0.2s ease,
           margin-top 0.3s ease;
       }
@@ -1308,7 +1206,7 @@ interface FinishedJob {
       ===================================================== */
 
       .empty-state {
-        background: #ffffff;
+        background: var(--t-surface);
 
         border: 1px solid var(--border);
 
@@ -1544,7 +1442,8 @@ interface FinishedJob {
   ],
 })
 export class EmployeeTrabajosPage implements OnInit {
-  activeTab: "confirmados" | "finalizados" = "confirmados";
+  // El ayudante solo ve trabajos ya realizados (no tiene trabajos por realizar).
+  activeTab: "confirmados" | "finalizados" = "finalizados";
 
   confirmedJobs: ConfirmedJob[] = [];
   finishedJobs: FinishedJob[] = [];
@@ -1556,6 +1455,27 @@ export class EmployeeTrabajosPage implements OnInit {
    * 2026-09
    */
   selectedMonth = "";
+
+  myId = "";
+  myRole = "";
+  closing: any = null;
+
+  canClose(job: ConfirmedJob) {
+    return (
+      this.myRole === "encargado" &&
+      (job.status === "confirmado" || job.status === "en_curso") &&
+      (!job.encargadoId || job.encargadoId === this.myId)
+    );
+  }
+
+  openClose(job: ConfirmedJob) {
+    this.closing = { ...job.raw, id: job.id };
+  }
+
+  async afterClose() {
+    this.closing = null;
+    await this.load();
+  }
 
   constructor(private supabase: SupabaseService) {
     addIcons({
@@ -1572,6 +1492,9 @@ export class EmployeeTrabajosPage implements OnInit {
       hourglassOutline,
       chevronForwardOutline,
       chevronBackOutline,
+      flagOutline,
+      alertCircleOutline,
+      closeOutline,
     });
   }
 
@@ -1599,6 +1522,20 @@ export class EmployeeTrabajosPage implements OnInit {
    * Ejemplo:
    * septiembre de 2026
    */
+  get monthName(): string {
+    const label = this.currentMonthLabel.split(" de ")[0] || this.currentMonthLabel;
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  statusText(status: string): string {
+    return JOB_STATUS_LABELS[status] ?? "Confirmado";
+  }
+
+  shortDate(iso: string): string {
+    const [, m, d] = String(iso || "").split("-");
+    return d && m ? `${d}/${m}` : "";
+  }
+
   get currentMonthLabel(): string {
     if (!this.selectedMonth) {
       return "Sin mes";
@@ -1717,11 +1654,24 @@ export class EmployeeTrabajosPage implements OnInit {
       /**
        * TRABAJOS CONFIRMADOS
        */
+      const [me, user] = await Promise.all([
+        this.supabase.getMyProfile().catch(() => null),
+        this.supabase.getCurrentUser().catch(() => null),
+      ]);
+      this.myRole = me?.role ?? "";
+      this.myId = user?.id ?? "";
+
       const availableJobs = await this.supabase.getAvailableJobsForEmployee();
 
       this.confirmedJobs = (availableJobs ?? []).map((job: any) => {
         return {
-          id: job.id,
+          id: job.job_id ?? job.id,
+
+          encargadoId: job.encargado_id ?? null,
+
+          returnReason: job.return_reason ?? null,
+
+          raw: job,
 
           jobType: job.job_type ?? job.type ?? "Trabajo",
 
@@ -1732,6 +1682,10 @@ export class EmployeeTrabajosPage implements OnInit {
           address: job.address_info ?? job.address ?? job.location ?? "",
 
           startTime: job.start_time ?? "",
+
+          jobDate: job.job_date ?? "",
+
+          status: job.status ?? "confirmado",
 
           workerName:
             job.worker_name ??

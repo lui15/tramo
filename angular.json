@@ -21,8 +21,8 @@
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
-            "assets": ["src/favicon.ico", "src/assets"],
-            "styles": ["src/theme/variables.scss", "src/global.scss"],
+            "assets": ["src/assets"],
+            "styles": ["src/theme/variables.scss", "src/global.scss", "src/theme/job-flow.scss", "src/theme/animations.scss"],
             "scripts": []
           },
           "configurations": {

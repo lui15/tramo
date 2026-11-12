@@ -1,165 +1,142 @@
 import { inject } from "@angular/core";
-import { CanActivateFn, Router } from "@angular/router";
-import { SupabaseService } from "./supabase.service";
+import { CanActivateFn, CanMatchFn, Router, UrlTree } from "@angular/router";
+import { SupabaseService, Profile, Role, homeForRole } from "./supabase.service";
 
 // =====================================================
-// DESTINO SEGÚN EL USUARIO
+// GUARDS POR ROL
+// =====================================================
+//
+// Importante: esto solo decide QUÉ PANTALLAS se ven.
+// La protección real de los datos está en Supabase (RLS).
+//
+// - admin       -> /admin
+// - secretaria  -> /secretaria
+// - encargado   -> /employee
+// - ayudante    -> /employee
+//
+// Si la cuenta no está activa se cierra la sesión.
+// Si tiene que cambiar la contraseña inicial -> /cuenta/clave
 // =====================================================
 
-async function resolveDestination(supabase: SupabaseService): Promise<string> {
-  const user = await supabase.getCurrentUser();
-
-  // No hay sesión
-  if (!user) {
-    return "/login";
+async function loadProfile(supabase: SupabaseService): Promise<Profile | null> {
+  try {
+    return await supabase.getMyProfile();
+  } catch {
+    return null;
   }
-
-  const profile = await supabase.getMyProfile();
-
-  // Hay sesión pero no existe perfil
-  if (!profile) {
-    return "/login";
-  }
-
-  // Administrador
-  if (profile.role === "admin") {
-    return "/admin";
-  }
-
-  // Empleado pendiente de aprobación
-  if (!profile.is_approved) {
-    return "/pending-approval";
-  }
-
-  // Empleado aprobado
-  return "/employee";
 }
 
-// =====================================================
-// LOGIN / REGISTER
-// =====================================================
-//
-// IMPORTANTE:
-//
-// NO redirigimos automáticamente desde /login.
-//
-// Esto permite que:
-//   /       -> /login
-//
-// incluso si Supabase conserva una sesión.
-//
-// De esta forma, al iniciar la aplicación siempre
-// podemos entrar primero al Login.
-//
-// Las rutas protegidas siguen estando protegidas por
-// adminGuard y employeeGuard.
-//
-// =====================================================
+function isUsable(profile: Profile | null): profile is Profile {
+  return (
+    !!profile &&
+    profile.is_active !== false &&
+    profile.account_status === "activo" &&
+    !profile.deleted_at
+  );
+}
 
-export const publicOnlyGuard: CanActivateFn = async () => {
-  return true;
-};
+async function redirectOut(
+  supabase: SupabaseService,
+  router: Router,
+  profile: Profile | null,
+): Promise<UrlTree> {
+  if (profile && !isUsable(profile)) {
+    await supabase.signOut();
+    return router.parseUrl("/login?motivo=cuenta");
+  }
 
-// =====================================================
-// ADMIN GUARD
-// =====================================================
-//
-// Protege:
-//
-// /admin
-// /admin/finanzas
-// /admin/trabajos
-// /admin/empleados
-// /admin/historial
-//
-// Si el usuario es administrador:
-//      permite la ruta.
-//
-// Si no es administrador:
-//      lo manda a su zona correspondiente.
-//
-// =====================================================
+  if (!profile) {
+    return router.parseUrl("/login");
+  }
 
-export const adminGuard: CanActivateFn = async () => {
+  if (profile.must_change_password) {
+    return router.parseUrl("/cuenta/clave");
+  }
+
+  return router.parseUrl(homeForRole(profile.role));
+}
+
+/** Guard genérico: permite la ruta solo a los roles indicados. */
+export function roleGuard(...roles: Role[]): CanActivateFn {
+  return async () => {
+    const supabase = inject(SupabaseService);
+    const router = inject(Router);
+
+    const profile = await loadProfile(supabase);
+
+    if (
+      isUsable(profile) &&
+      roles.includes(profile.role) &&
+      !profile.must_change_password
+    ) {
+      return true;
+    }
+
+    return redirectOut(supabase, router, profile);
+  };
+}
+
+export const adminGuard: CanActivateFn = roleGuard("admin");
+
+export const secretaryGuard: CanActivateFn = roleGuard("secretaria");
+
+export const employeeGuard: CanActivateFn = roleGuard("encargado", "ayudante");
+
+/** Cualquier usuario con sesión y cuenta activa (p. ej. cambiar contraseña). */
+export const signedInGuard: CanActivateFn = async () => {
   const supabase = inject(SupabaseService);
   const router = inject(Router);
 
-  const profile = await supabase.getMyProfile();
+  const profile = await loadProfile(supabase);
 
-  // Administrador → puede entrar
-  if (profile?.role === "admin") {
+  if (isUsable(profile)) {
     return true;
   }
 
-  // Cualquier otro usuario → va a su zona
-  const destination = await resolveDestination(supabase);
-
-  return router.parseUrl(destination);
+  return redirectOut(supabase, router, profile);
 };
 
 // =====================================================
-// EMPLOYEE GUARD
+// LOGIN
 // =====================================================
 //
-// Protege:
+// No redirigimos automáticamente desde /login: al abrir
+// la app siempre se puede ver el login. Las rutas
+// protegidas siguen protegidas por sus guards.
 //
-// /employee
-// /employee/trabajos
-// /employee/finanzas
-//
-// Solo permite empleados aprobados.
-//
-// Un administrador NO puede entrar aquí.
-//
-// =====================================================
+export const publicOnlyGuard: CanActivateFn = () => true;
 
-export const employeeGuard: CanActivateFn = async () => {
-  const supabase = inject(SupabaseService);
-  const router = inject(Router);
-
-  const profile = await supabase.getMyProfile();
-
-  // Empleado aprobado → puede entrar
-  if (profile && profile.role !== "admin" && profile.is_approved) {
-    return true;
-  }
-
-  // Si es admin → /admin
-  // Si está pendiente → /pending-approval
-  // Si no tiene sesión → /login
-  const destination = await resolveDestination(supabase);
-
-  return router.parseUrl(destination);
-};
-
-// =====================================================
-// PENDING APPROVAL GUARD
-// =====================================================
-//
-// Protege:
-//
-// /pending-approval
-//
-// Solo permite empleados que todavía NO han sido
-// aprobados.
-//
-// =====================================================
-
+// Compatibilidad: la antigua pantalla "pendiente de aprobación" ya no se usa
+// (las cuentas las crea el administrador). Redirige a donde corresponda.
 export const pendingGuard: CanActivateFn = async () => {
   const supabase = inject(SupabaseService);
   const router = inject(Router);
+  return redirectOut(supabase, router, await loadProfile(supabase));
+};
 
-  const profile = await supabase.getMyProfile();
+// =====================================================
+// PANEL DEL ENCARGADO
+// =====================================================
+// Las rutas /employee/inicio, /trabajos y /finanzas tienen una versión
+// propia para el encargado. Este canMatch elige esa versión solo cuando el
+// usuario conectado es encargado; el ayudante sigue con las de siempre.
+export const encargadoMatch: CanMatchFn = async () => {
+  const supabase = inject(SupabaseService);
+  const profile = await loadProfile(supabase);
+  return isUsable(profile) && profile.role === "encargado";
+};
 
-  // Empleado pendiente → puede entrar
-  if (profile && profile.role !== "admin" && !profile.is_approved) {
-    return true;
-  }
-
-  // Si es admin → /admin
-  // Si está aprobado → /employee
-  // Si no tiene sesión → /login
-  const destination = await resolveDestination(supabase);
-
-  return router.parseUrl(destination);
+/**
+ * "Mi dinero" nuevo (sueldo del mes, adelantos y pendiente): encargados y
+ * ayudantes con sueldo fijo. El ayudante por horas/días sigue con el suyo.
+ */
+export const myMoneyMatch: CanMatchFn = async () => {
+  const supabase = inject(SupabaseService);
+  const profile = await loadProfile(supabase);
+  if (!isUsable(profile)) return false;
+  if (profile.role === "encargado") return true;
+  return (
+    profile.role === "ayudante" &&
+    (profile.payment_method === "fijo" || profile.salary_type === "mes")
+  );
 };

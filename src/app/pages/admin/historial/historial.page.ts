@@ -63,10 +63,13 @@ interface ActivityItem {
   expense?: Expense;
 }
 
+import { PageHeaderComponent } from "../../../components/page-header.component";
+
 @Component({
   selector: "app-admin-historial",
   standalone: true,
   imports: [
+    PageHeaderComponent,
     AdminTabbarComponent,
     CommonModule,
     IonContent,
@@ -76,11 +79,7 @@ interface ActivityItem {
     IonIcon,
   ],
   template: `
-    <ion-header class="history-header">
-      <ion-toolbar>
-        <ion-title>Historial</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <app-page-header title="Historial" subtitle="Trabajos finalizados"></app-page-header>
 
     <ion-content class="history-content">
       <div class="history-wrap">
@@ -96,32 +95,15 @@ interface ActivityItem {
         </section>
 
         <!-- SELECTOR DE MES -->
-        <section class="month-selector">
-          <button
-            type="button"
-            class="month-arrow"
-            (click)="previousMonth()"
-            aria-label="Mes anterior"
-          >
+        <section class="t-month">
+          <button type="button" class="t-month-arrow" (click)="previousMonth()" aria-label="Mes anterior">
             <ion-icon name="chevron-back-outline"></ion-icon>
           </button>
-
-          <div class="month-current">
-            <span class="month-name">
-              {{ monthNames[selectedMonth] | titlecase }}
-            </span>
-
-            <span class="month-year">
-              {{ selectedYear }}
-            </span>
+          <div class="t-month-current">
+            <strong>{{ monthNames[selectedMonth] | titlecase }}</strong>
+            <span>{{ selectedYear }}</span>
           </div>
-
-          <button
-            type="button"
-            class="month-arrow"
-            (click)="nextMonth()"
-            aria-label="Mes siguiente"
-          >
+          <button type="button" class="t-month-arrow" (click)="nextMonth()" aria-label="Mes siguiente">
             <ion-icon name="chevron-forward-outline"></ion-icon>
           </button>
         </section>
@@ -446,15 +428,15 @@ interface ActivityItem {
   styles: [
     `
       :host {
-        --history-bg: #f8fafc;
+        --history-bg: var(--t-surface-2);
         --history-white: #ffffff;
-        --history-primary: #1769ff;
-        --history-primary-dark: #123b78;
-        --history-primary-light: #eaf1ff;
-        --history-text: #172b4d;
-        --history-text-soft: #61708a;
-        --history-muted: #8994a6;
-        --history-border: #e5eaf1;
+        --history-primary: var(--t-primary);
+        --history-primary-dark: var(--t-text);
+        --history-primary-light: var(--t-primary-soft);
+        --history-text: var(--t-text);
+        --history-text-soft: var(--t-muted);
+        --history-muted: var(--t-muted);
+        --history-border: var(--t-border);
         --green: #299b45;
         --green-bg: #eaf8ed;
         --orange: #e99316;
@@ -471,12 +453,12 @@ interface ActivityItem {
       /* HEADER */
 
       .history-header {
-        --background: #ffffff;
-        background: #ffffff;
+        --background: var(--t-surface);
+        background: var(--t-surface);
       }
 
       .history-header ion-toolbar {
-        --background: #ffffff;
+        --background: var(--t-surface);
         --min-height: 64px;
 
         height: 64px;
@@ -572,7 +554,7 @@ interface ActivityItem {
 
         margin-bottom: 20px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         border: 1px solid var(--history-border);
 
@@ -596,7 +578,7 @@ interface ActivityItem {
 
         height: 3px;
 
-        background: linear-gradient(90deg, var(--history-primary), #65a0ff);
+        display: none;
       }
 
       .month-arrow {
@@ -616,14 +598,13 @@ interface ActivityItem {
 
         border-radius: 13px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         color: var(--history-primary);
 
         cursor: pointer;
 
-        transition:
-          transform 0.15s ease,
+        transition: transform 0.15s ease,
           background 0.15s ease;
       }
 
@@ -742,7 +723,7 @@ interface ActivityItem {
 
         scrollbar-width: thin;
 
-        scrollbar-color: #cbd5e1 transparent;
+        scrollbar-color: var(--t-border) transparent;
       }
 
       .activity-scroll::-webkit-scrollbar {
@@ -754,7 +735,7 @@ interface ActivityItem {
       }
 
       .activity-scroll::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: var(--t-border);
 
         border-radius: 10px;
       }
@@ -782,7 +763,7 @@ interface ActivityItem {
 
         padding: 15px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         border: 1px solid var(--history-border);
 
@@ -965,7 +946,7 @@ interface ActivityItem {
 
         padding: 12px;
 
-        background: #f8fbff;
+        background: var(--t-surface-2);
 
         border: 1px solid var(--history-border);
 
@@ -1034,7 +1015,7 @@ interface ActivityItem {
 
         padding: 10px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         border: 1px solid var(--history-border);
 
@@ -1100,7 +1081,7 @@ interface ActivityItem {
 
         padding: 38px 20px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         border: 1px solid var(--history-border);
 
@@ -1169,7 +1150,7 @@ interface ActivityItem {
 
         width: 100%;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         border-top: 1px solid var(--history-border);
 

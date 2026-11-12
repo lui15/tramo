@@ -32,20 +32,36 @@ import {
   hammerOutline,
   constructOutline,
   chevronForwardOutline,
+  chevronBackOutline,
   documentTextOutline,
   calendarOutline,
   timeOutline,
+  hourglassOutline,
+  alertCircleOutline,
+  checkmarkDoneOutline,
+  cameraOutline as tramoCameraOutline,
+  closeOutline as tramoCloseOutline,
 } from "ionicons/icons";
 
 import { SupabaseService, Profile } from "../../../services/supabase.service";
 
-import { AdminTabbarComponent } from "../../../components/admin-tabbar.component";
+import { RoleTabbarComponent } from "../../../components/role-tabbar.component";
+
+import { PageHeaderComponent } from "../../../components/page-header.component";
+import { JobCloseFormComponent } from "../../../components/job-close-form.component";
+import { JobPhotosComponent } from "../../../components/job-photos.component";
+import { JobReviewComponent } from "../../../components/job-review.component";
+import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
 
 @Component({
   selector: "app-admin-trabajos",
   standalone: true,
   imports: [
-    AdminTabbarComponent,
+    PageHeaderComponent,
+    JobCloseFormComponent,
+    JobPhotosComponent,
+    JobReviewComponent,
+    RoleTabbarComponent,
     CommonModule,
     FormsModule,
     IonContent,
@@ -70,11 +86,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
     <!-- =========================
          HEADER
     ========================== -->
-    <ion-header class="trab-header">
-      <ion-toolbar>
-        <ion-title>Trabajos</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <app-page-header title="Trabajos" subtitle="Gestión"></app-page-header>
 
     <!-- =========================
          CONTENIDO PRINCIPAL
@@ -99,6 +111,47 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
         <!-- =========================
              LISTA DE TRABAJOS
         ========================== -->
+        <!-- SELECTOR DE MES -->
+        <section class="t-month">
+          <button type="button" class="t-month-arrow" (click)="shiftMonth(-1)" aria-label="Mes anterior">
+            <ion-icon name="chevron-back-outline"></ion-icon>
+          </button>
+          <div class="t-month-current">
+            <strong>{{ monthNames[selectedMonth] }}</strong>
+            <span>{{ selectedYear }}</span>
+          </div>
+          <button type="button" class="t-month-arrow" (click)="shiftMonth(1)" aria-label="Mes siguiente">
+            <ion-icon name="chevron-forward-outline"></ion-icon>
+          </button>
+        </section>
+
+        <section class="t-month-summary">
+          <div><span>Trabajos</span><strong>{{ monthJobs.length }}</strong></div>
+          <div><span>Finalizados</span><strong>{{ monthFinished }}</strong></div>
+          <div><span>Facturado</span><strong>{{ monthIncome | number: "1.0-2" }} €</strong></div>
+        </section>
+
+        <!-- PENDIENTES DE REVISIÓN -->
+        <section class="review-switch">
+          <button type="button" [class.on]="!reviewOnly" (click)="reviewOnly = false">
+            Trabajos del mes
+          </button>
+          <button type="button" [class.on]="reviewOnly" (click)="reviewOnly = true">
+            <ion-icon name="hourglass-outline"></ion-icon>
+            Pendientes de revisión
+            <span class="review-count" *ngIf="reviewCount">{{ reviewCount }}</span>
+          </button>
+        </section>
+
+        <button type="button" class="review-alert" *ngIf="reviewCount && !reviewOnly" (click)="reviewOnly = true">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          <span>
+            <strong>{{ reviewCount }} {{ reviewCount === 1 ? "trabajo espera" : "trabajos esperan" }} tu revisión</strong>
+            Revisa las horas y aprueba para que cobren.
+          </span>
+          <ion-icon name="chevron-forward-outline"></ion-icon>
+        </button>
+
         <section class="recent-section">
           <div class="section-header">
             <div class="section-title-wrapper">
@@ -106,12 +159,13 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
                 <ion-icon name="document-text-outline"></ion-icon>
               </div>
 
-              <h3>TODOS LOS TRABAJOS</h3>
+              <h3 *ngIf="!reviewOnly">TRABAJOS DE {{ monthNames[selectedMonth] | uppercase }}</h3>
+              <h3 *ngIf="reviewOnly">PENDIENTES DE REVISIÓN</h3>
             </div>
           </div>
 
-          <div class="ledger" *ngIf="jobs.length; else emptyState">
-            <ion-item-sliding *ngFor="let job of jobs">
+          <div class="ledger" *ngIf="visibleJobs.length; else emptyState">
+            <ion-item-sliding *ngFor="let job of visibleJobs">
               <div class="ledger-row" (click)="openDetail(job)">
                 <div class="job-type-icon" [ngClass]="job.job_type">
                   <ion-icon [name]="jobIcon(job.job_type)"></ion-icon>
@@ -178,9 +232,14 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
                 </div>
               </div>
 
-              <h4>Todavía no hay trabajos.</h4>
-
-              <p>Toca "Crear trabajo" para añadir el primero.</p>
+              <ng-container *ngIf="!reviewOnly">
+                <h4>No hay trabajos en {{ monthNames[selectedMonth] }} {{ selectedYear }}.</h4>
+                <p>Cambia de mes con las flechas o toca "Crear trabajo".</p>
+              </ng-container>
+              <ng-container *ngIf="reviewOnly">
+                <h4>Todo revisado.</h4>
+                <p>Cuando un encargado termine un trabajo aparecerá aquí.</p>
+              </ng-container>
             </div>
           </ng-template>
         </section>
@@ -360,6 +419,53 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
               </ion-popover>
             </div>
 
+            <!-- PRECIO -->
+            <div class="form-card">
+              <div class="price-label">Precio del trabajo</div>
+              <div class="jf-seg price-seg">
+                <button type="button" [class.on]="newJob.price_type === 'fijo'" (click)="newJob.price_type = 'fijo'">Fijo</button>
+                <button type="button" [class.on]="newJob.price_type === 'hora'" (click)="newJob.price_type = 'hora'">Por hora</button>
+                <button type="button" [class.on]="newJob.price_type === 'dia'" (click)="newJob.price_type = 'dia'">Por día</button>
+              </div>
+              <div class="jf-money">
+                <input type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="newJob.price_amount" placeholder="0,00" />
+                <span>{{ priceSuffix(newJob.price_type) }}</span>
+              </div>
+            </div>
+
+            <!-- FOTOS (qué hay que transportar / montar) -->
+            <div class="form-card">
+              <div class="price-label">Fotos del trabajo</div>
+              <p class="price-help" style="margin: 0 4px 10px">
+                Sube fotos de lo que hay que transportar o montar. El encargado las verá en su ficha.
+              </p>
+              <div class="new-photos">
+                <div class="new-photo" *ngFor="let p of newPhotos; let i = index">
+                  <img [src]="p.preview" alt="Foto" />
+                  <button type="button" (click)="removeNewPhoto(i)" aria-label="Quitar foto">
+                    <ion-icon name="close-outline"></ion-icon>
+                  </button>
+                </div>
+                <label class="new-photo add">
+                  <input type="file" accept="image/*" multiple hidden (change)="addNewPhotos($event)" />
+                  <ion-icon name="camera-outline"></ion-icon>
+                  <span>Añadir</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- ENCARGADO (obligatorio) -->
+            <div class="form-card">
+              <ion-item class="form-item" fill="outline" shape="round">
+                <ion-select label="Encargado del trabajo *" labelPlacement="stacked" [(ngModel)]="newJob.encargado_id"
+                            placeholder="Elige un encargado" interface="action-sheet">
+                  <ion-select-option *ngFor="let e of encargados" [value]="e.id">{{ e.full_name }}</ion-select-option>
+                </ion-select>
+              </ion-item>
+              <p class="price-help" *ngIf="!encargados.length">No hay encargados activos. Crea uno en Equipo.</p>
+              <p class="price-help" *ngIf="encargados.length">Solo este encargado verá el trabajo. Los ayudantes no lo ven.</p>
+            </div>
+
             <!-- BOTONES -->
             <div class="modal-actions">
               <ion-button
@@ -417,240 +523,95 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
                 ·
                 {{ selectedJob.start_time }}
               </p>
-            </div>
 
-            <!-- CAMBIAR ESTADO -->
-            <div class="form-card">
-              <ion-item class="form-item" fill="outline" shape="round">
-                <ion-select
-                  label="Estado"
-                  [(ngModel)]="selectedJob.status"
-                  (ionChange)="onStatusChange()"
-                >
-                  <ion-select-option value="pendiente">
-                    Pendiente
-                  </ion-select-option>
+              <p *ngIf="selectedJob.price_amount != null">
+                <b>Precio:</b>
+                {{ selectedJob.price_amount | number: "1.2-2" }} €{{ priceSuffixText(selectedJob.price_type) }}
+              </p>
 
-                  <ion-select-option value="confirmado">
-                    Confirmado
-                  </ion-select-option>
-
-                  <ion-select-option value="en_curso">
-                    En curso
-                  </ion-select-option>
-
-                  <ion-select-option value="finalizado">
-                    Finalizado
-                  </ion-select-option>
-                </ion-select>
-              </ion-item>
+              <p *ngIf="selectedJob.closed_price != null">
+                <b>Cobrado (según encargado):</b>
+                {{ selectedJob.closed_price | number: "1.2-2" }} €
+              </p>
             </div>
 
             <!-- ==================================================
-                 FINALIZACIÓN
+                 EN REVISIÓN / FINALIZADO -> revisión
             =================================================== -->
-            <div
-              *ngIf="selectedJob.status === 'finalizado'"
-              class="finalize-block"
-            >
-              <h3 class="block-title">Datos de finalización</h3>
+            <app-job-review
+              *ngIf="selectedJob.status === 'pendiente_revision' || selectedJob.status === 'finalizado'"
+              [jobId]="selectedJob.id"
+              (done)="afterFlow()"
+            ></app-job-review>
+
+            <!-- ==================================================
+                 CERRAR (registrar horas y participantes)
+            =================================================== -->
+            <app-job-close-form
+              *ngIf="closingMode"
+              [job]="selectedJob"
+              [staffMode]="true"
+              (saved)="afterFlow()"
+              (cancel)="closingMode = false"
+            ></app-job-close-form>
+
+            <ng-container *ngIf="!closingMode && isOpenStatus(selectedJob.status)">
+              <div class="jf-banner warn" *ngIf="selectedJob.return_reason" style="margin-bottom: 14px">
+                <ion-icon name="alert-circle-outline"></ion-icon>
+                <div><strong>Devuelto al encargado:</strong> {{ selectedJob.return_reason }}</div>
+              </div>
 
               <div class="form-card">
-                <!-- FECHA FINALIZACIÓN -->
-                <div class="date-field" id="finalize-date-trigger">
-                  <div class="date-field-icon">
-                    <ion-icon name="calendar-outline"></ion-icon>
-                  </div>
-
-                  <div class="date-field-text">
-                    <span class="date-field-label">
-                      Fecha de finalización
-                    </span>
-
-                    <span
-                      class="date-field-value"
-                      [class.placeholder]="!finalizeData.completion_date"
-                    >
-                      {{
-                        finalizeData.completion_date
-                          ? formatDate(finalizeData.completion_date)
-                          : "Seleccionar fecha"
-                      }}
-                    </span>
-                  </div>
+                <!-- Los trabajos solo están Confirmados hasta que se terminan -->
+                <div class="status-fixed">
+                  <span>Estado</span>
+                  <strong>Confirmado</strong>
                 </div>
 
-                <ion-popover
-                  trigger="finalize-date-trigger"
-                  show-backdrop="true"
-                >
-                  <ng-template>
-                    <ion-datetime
-                      presentation="date"
-                      [(ngModel)]="finalizeData.completion_date"
-                    ></ion-datetime>
-                  </ng-template>
-                </ion-popover>
-
-                <!-- HORA FINALIZACIÓN -->
-                <div class="date-field" id="finalize-time-trigger">
-                  <div class="date-field-icon">
-                    <ion-icon name="time-outline"></ion-icon>
-                  </div>
-
-                  <div class="date-field-text">
-                    <span class="date-field-label"> Hora de finalización </span>
-
-                    <span
-                      class="date-field-value"
-                      [class.placeholder]="!finalizeData.completion_time"
-                    >
-                      {{
-                        finalizeData.completion_time
-                          ? formatTime(finalizeData.completion_time)
-                          : "Seleccionar hora"
-                      }}
-                    </span>
-                  </div>
-                </div>
-
-                <ion-popover
-                  trigger="finalize-time-trigger"
-                  show-backdrop="true"
-                >
-                  <ng-template>
-                    <ion-datetime
-                      presentation="time"
-                      [(ngModel)]="finalizeData.completion_time"
-                    ></ion-datetime>
-                  </ng-template>
-                </ion-popover>
-
-                <!-- DURACIÓN -->
                 <ion-item class="form-item" fill="outline" shape="round">
-                  <ion-input
-                    label="Duración"
-                    type="number"
-                    labelPlacement="stacked"
-                    [(ngModel)]="finalizeData.duration_value"
-                  ></ion-input>
-                </ion-item>
-
-                <!-- UNIDAD -->
-                <ion-item class="form-item" fill="outline" shape="round">
-                  <ion-select
-                    label="Unidad"
-                    [(ngModel)]="finalizeData.duration_unit"
-                  >
-                    <ion-select-option value="horas"> Horas </ion-select-option>
-
-                    <ion-select-option value="dias"> Días </ion-select-option>
+                  <ion-select label="Encargado *" [(ngModel)]="selectedJob.encargado_id" placeholder="Elige un encargado"
+                              interface="action-sheet">
+                    <ion-select-option *ngFor="let e of encargados" [value]="e.id">{{ e.full_name }}</ion-select-option>
                   </ion-select>
                 </ion-item>
 
-                <!-- COSTO -->
-                <ion-item class="form-item" fill="outline" shape="round">
-                  <ion-input
-                    label="Costo total del trabajo (€)"
-                    type="number"
-                    labelPlacement="stacked"
-                    [(ngModel)]="finalizeData.total_cost"
-                  ></ion-input>
-                </ion-item>
+                <div class="price-label">Precio del trabajo</div>
+                <div class="jf-seg price-seg">
+                  <button type="button" [class.on]="selectedJob.price_type === 'fijo'" (click)="selectedJob.price_type = 'fijo'">Fijo</button>
+                  <button type="button" [class.on]="selectedJob.price_type === 'hora'" (click)="selectedJob.price_type = 'hora'">Por hora</button>
+                  <button type="button" [class.on]="selectedJob.price_type === 'dia'" (click)="selectedJob.price_type = 'dia'">Por día</button>
+                </div>
+                <div class="jf-money">
+                  <input type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="selectedJob.price_amount" placeholder="0,00" />
+                  <span>{{ priceSuffix(selectedJob.price_type) }}</span>
+                </div>
               </div>
 
-              <!-- PARTICIPANTES -->
-              <h3 class="block-title">Participantes</h3>
-
-              <div
-                *ngFor="let p of finalizeData.participants; let i = index"
-                class="participant-card"
-              >
-                <ion-item class="form-item" fill="outline" shape="round">
-                  <ion-select label="Empleado" [(ngModel)]="p.employee_id">
-                    <ion-select-option
-                      *ngFor="let e of employees"
-                      [value]="e.id"
-                    >
-                      {{ e.full_name }}
-                    </ion-select-option>
-                  </ion-select>
-                </ion-item>
-
-                <ion-item class="form-item" fill="outline" shape="round">
-                  <ion-input
-                    label="Horas/días trabajados"
-                    type="number"
-                    labelPlacement="stacked"
-                    [(ngModel)]="p.hours_or_days"
-                  ></ion-input>
-                </ion-item>
-
-                <ion-item class="form-item" fill="outline" shape="round">
-                  <ion-input
-                    label="Cuánto cobró (€)"
-                    type="number"
-                    labelPlacement="stacked"
-                    [(ngModel)]="p.amount_earned"
-                  ></ion-input>
-                </ion-item>
-
-                <ion-button
-                  fill="clear"
-                  color="danger"
-                  size="small"
-                  (click)="removeParticipantRow(i)"
-                >
-                  Quitar participante
-                </ion-button>
+              <div class="form-card">
+                <app-job-photos [jobId]="selectedJob.id" [canUpload]="true"></app-job-photos>
               </div>
 
-              <!-- AGREGAR PARTICIPANTE -->
-              <ion-button
-                expand="block"
-                fill="outline"
-                class="outline-btn"
-                (click)="addParticipantRow()"
-              >
-                + Agregar participante
-              </ion-button>
-
-              <!-- FINALIZAR -->
               <div class="modal-actions">
+                <ion-button expand="block" class="primary-btn" (click)="saveStatus()">
+                  Guardar cambios
+                </ion-button>
+
                 <ion-button
+                  *ngIf="selectedJob.status === 'confirmado' || selectedJob.status === 'en_curso'"
                   expand="block"
-                  class="primary-btn"
-                  (click)="finalizeJob()"
+                  fill="outline"
+                  class="outline-btn"
+                  (click)="closingMode = true"
                 >
-                  Guardar y finalizar trabajo
+                  <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+                  Trabajo terminado (registrar horas)
+                </ion-button>
+
+                <ion-button expand="block" fill="clear" class="cancel-btn" (click)="showDetailModal = false">
+                  Cerrar
                 </ion-button>
               </div>
-            </div>
-
-            <!-- =========================
-                 ACCIONES ESTADO
-            ========================== -->
-            <div
-              class="modal-actions"
-              *ngIf="selectedJob.status !== 'finalizado'"
-            >
-              <ion-button
-                expand="block"
-                class="primary-btn"
-                (click)="saveStatus()"
-              >
-                Guardar estado
-              </ion-button>
-
-              <ion-button
-                expand="block"
-                fill="clear"
-                class="cancel-btn"
-                (click)="showDetailModal = false"
-              >
-                Cerrar
-              </ion-button>
-            </div>
+            </ng-container>
 
             <!-- =========================
                  ELIMINAR DESDE DETALLE
@@ -672,24 +633,94 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       </ng-template>
     </ion-modal>
 
-    <app-admin-tabbar></app-admin-tabbar>
+    <app-role-tabbar></app-role-tabbar>
   `,
 
   styles: [
     `
+      .review-switch {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 6px;
+        padding: 4px;
+        margin: 4px 0 12px;
+        background: var(--t-surface-2);
+        border-radius: 14px;
+      }
+      .review-switch button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 11px;
+        background: transparent;
+        color: var(--t-muted);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+      .review-switch button.on {
+        background: var(--t-surface);
+        color: var(--t-text);
+        box-shadow: var(--t-shadow);
+      }
+      .review-count {
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: var(--t-warning);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        display: inline-grid;
+        place-items: center;
+      }
+      .review-alert {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        border: 1px solid transparent;
+        border-radius: var(--t-radius);
+        background: var(--t-warning-soft);
+        color: var(--t-warning);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      .review-alert > ion-icon:first-child {
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+      .review-alert span {
+        flex: 1;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .review-alert strong {
+        display: block;
+        font-size: 14px;
+      }
+
       :host {
-        --finance-bg: #f8fafc;
+        --finance-bg: var(--t-surface-2);
         --finance-white: #ffffff;
 
-        --finance-primary: #1769ff;
-        --finance-primary-dark: #123b78;
-        --finance-primary-light: #eaf1ff;
+        --finance-primary: var(--t-primary);
+        --finance-primary-dark: var(--t-text);
+        --finance-primary-light: var(--t-primary-soft);
 
-        --finance-text: #172b4d;
-        --finance-text-soft: #61708a;
-        --finance-muted: #8994a6;
+        --finance-text: var(--t-text);
+        --finance-text-soft: var(--t-muted);
+        --finance-muted: var(--t-muted);
 
-        --finance-border: #e5eaf1;
+        --finance-border: var(--t-border);
 
         --finance-orange: #e99316;
         --finance-orange-bg: #fff4e4;
@@ -710,11 +741,11 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       ========================== */
 
       .trab-header {
-        --background: #ffffff;
+        --background: var(--t-surface);
       }
 
       .trab-header ion-toolbar {
-        --background: #ffffff;
+        --background: var(--t-surface);
         --border-width: 0;
         --min-height: 64px;
 
@@ -770,14 +801,9 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
         align-items: center;
         text-align: center;
 
-        background: linear-gradient(
-          180deg,
-          #ffffff 0%,
-          #ffffff 70%,
-          #f5f8ff 100%
-        );
+        background: var(--t-surface);
 
-        border: 1px solid #e5eaf2;
+        border: 1px solid var(--t-border);
         border-radius: 24px;
 
         overflow: hidden;
@@ -786,12 +812,11 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         margin-bottom: 22px;
 
-        box-shadow: 0 12px 35px rgba(28, 51, 86, 0.07);
+        box-shadow: var(--t-shadow);
 
         cursor: pointer;
 
-        transition:
-          transform 0.2s ease,
+        transition: transform 0.2s ease,
           box-shadow 0.2s ease;
       }
 
@@ -810,7 +835,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         height: 8px;
 
-        background: linear-gradient(90deg, #1769ff, #123b78);
+        display: none;
       }
 
       .cta-icon-wrapper {
@@ -829,9 +854,9 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         background: radial-gradient(
           circle,
-          #ffffff 35%,
-          #edf3ff 36%,
-          #edf3ff 100%
+          var(--t-surface) 35%,
+          var(--t-primary-soft) 36%,
+          var(--t-primary-soft) 100%
         );
       }
 
@@ -846,7 +871,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         border-radius: 14px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         box-shadow: 0 5px 18px rgba(23, 105, 255, 0.16);
       }
@@ -943,7 +968,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       .ledger {
         overflow: hidden;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         border: 1px solid var(--finance-border);
 
@@ -963,7 +988,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         padding: 12px 15px;
 
-        border-bottom: 1px solid #edf0f4;
+        border-bottom: 1px solid var(--t-surface-2);
 
         cursor: pointer;
       }
@@ -994,7 +1019,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       }
 
       .job-type-icon.mudanza {
-        background: #edf4ff;
+        background: var(--t-primary-soft);
       }
 
       .job-type-icon.reforma {
@@ -1090,6 +1115,24 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
         color: var(--finance-primary);
       }
 
+      .status-fixed {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        border-radius: 14px;
+        background: var(--t-primary-soft);
+        color: var(--t-primary);
+        font-size: 14px;
+      }
+      .status-fixed span {
+        font-weight: 600;
+        color: var(--t-text-2);
+      }
+      .status-fixed strong {
+        font-weight: 800;
+      }
       .status-badge.en_curso {
         background: #fff4e4;
 
@@ -1120,7 +1163,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         text-align: center;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
         border: 1px solid var(--finance-border);
 
@@ -1142,9 +1185,9 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         border-radius: 50%;
 
-        border: 1px dashed #dce7fa;
+        border: 1px dashed var(--t-border);
 
-        background: #f8fbff;
+        background: var(--t-surface-2);
       }
 
       .empty-icon {
@@ -1158,7 +1201,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         border-radius: 22px;
 
-        background: #edf4ff;
+        background: var(--t-primary-soft);
       }
 
       .empty-icon ion-icon {
@@ -1231,7 +1274,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       ========================== */
 
       .form-card {
-        background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+        background: var(--t-surface);
 
         border: 1px solid var(--finance-border);
 
@@ -1245,9 +1288,9 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       }
 
       .form-item {
-        --background: #ffffff;
+        --background: var(--t-surface);
 
-        --border-color: #d3dcec;
+        --border-color: var(--t-border);
         --border-width: 1.5px;
 
         --highlight-color-focused: var(--finance-primary);
@@ -1283,9 +1326,9 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 
         gap: 12px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
-        border: 1.5px solid #d3dcec;
+        border: 1.5px solid var(--t-border);
 
         border-radius: 14px;
 
@@ -1365,7 +1408,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       ========================== */
 
       .detail-summary {
-        background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+        background: var(--t-surface);
 
         border: 1px solid var(--finance-border);
 
@@ -1405,7 +1448,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       ========================== */
 
       .participant-card {
-        background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+        background: var(--t-surface);
 
         border: 1px solid var(--finance-border);
 
@@ -1427,7 +1470,7 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       }
 
       .primary-btn {
-        --background: #1769ff;
+        --background: var(--t-primary);
 
         --background-hover: #0f5be0;
 
@@ -1452,11 +1495,11 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
       }
 
       ion-button.primary-btn {
-        --background: #1769ff !important;
+        --background: var(--t-primary) !important;
 
         --color: #ffffff !important;
 
-        --border-color: #1769ff !important;
+        --border-color: var(--t-primary) !important;
       }
 
       .outline-btn {
@@ -1555,6 +1598,74 @@ import { AdminTabbarComponent } from "../../../components/admin-tabbar.component
 export class AdminTrabajosPage implements OnInit {
   jobs: any[] = [];
 
+  /* Vista por meses (como en Historial) */
+  selectedMonth = new Date().getMonth();
+  selectedYear = new Date().getFullYear();
+  readonly monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  ];
+
+  get monthJobs(): any[] {
+    const prefix = `${this.selectedYear}-${String(this.selectedMonth + 1).padStart(2, "0")}`;
+    return this.jobs
+      .filter((j) => String(j.job_date || "").startsWith(prefix))
+      .sort((a, b) =>
+        `${b.job_date} ${b.start_time || ""}`.localeCompare(`${a.job_date} ${a.start_time || ""}`),
+      );
+  }
+
+  /** Filtro "Pendientes de revisión" (de cualquier mes). */
+  reviewOnly = false;
+
+  get reviewJobs(): any[] {
+    return this.jobs
+      .filter((j) => j.status === "pendiente_revision")
+      .sort((a, b) => String(a.closed_at || "").localeCompare(String(b.closed_at || "")));
+  }
+
+  get reviewCount(): number {
+    return this.reviewJobs.length;
+  }
+
+  get visibleJobs(): any[] {
+    return this.reviewOnly ? this.reviewJobs : this.monthJobs;
+  }
+
+  get encargados(): Profile[] {
+    return this.employees.filter(
+      (e: any) => e.role === "encargado" && e.account_status === "activo" && !e.deleted_at,
+    );
+  }
+
+  closingMode = false;
+
+  isOpenStatus(status: string) {
+    return status === "pendiente" || status === "confirmado" || status === "en_curso";
+  }
+
+  async afterFlow() {
+    this.closingMode = false;
+    this.showDetailModal = false;
+    await this.load();
+  }
+
+  get monthFinished(): number {
+    return this.monthJobs.filter((j) => j.status === "finalizado").length;
+  }
+
+  get monthIncome(): number {
+    return this.monthJobs
+      .filter((j) => j.status === "finalizado")
+      .reduce((t, j) => t + (Number(j.total_cost) || 0), 0);
+  }
+
+  shiftMonth(delta: number) {
+    const d = new Date(this.selectedYear, this.selectedMonth + delta, 1);
+    this.selectedMonth = d.getMonth();
+    this.selectedYear = d.getFullYear();
+  }
+
   employees: Profile[] = [];
 
   loading = true;
@@ -1570,6 +1681,9 @@ export class AdminTrabajosPage implements OnInit {
     work_point: "",
     job_date: "",
     start_time: "",
+    encargado_id: null,
+    price_type: "fijo",
+    price_amount: null,
   };
 
   showDetailModal = false;
@@ -1590,15 +1704,21 @@ export class AdminTrabajosPage implements OnInit {
     private alertCtrl: AlertController,
   ) {
     addIcons({
+      "camera-outline": tramoCameraOutline,
+      "close-outline": tramoCloseOutline,
       addOutline,
       trashOutline,
       cubeOutline,
       hammerOutline,
       constructOutline,
       chevronForwardOutline,
+      chevronBackOutline,
       documentTextOutline,
       calendarOutline,
       timeOutline,
+      hourglassOutline,
+      alertCircleOutline,
+      checkmarkDoneOutline,
     });
   }
 
@@ -1655,16 +1775,7 @@ export class AdminTrabajosPage implements OnInit {
   ========================== */
 
   statusLabel(status: string) {
-    return (
-      (
-        {
-          pendiente: "Pendiente",
-          confirmado: "Confirmado",
-          en_curso: "En curso",
-          finalizado: "Finalizado",
-        } as Record<string, string>
-      )[status] ?? status
-    );
+    return JOB_STATUS_LABELS[status] ?? status;
   }
 
   /* =========================
@@ -1756,7 +1867,11 @@ export class AdminTrabajosPage implements OnInit {
       work_point: "",
       job_date: "",
       start_time: "",
+      encargado_id: this.encargados.length === 1 ? this.encargados[0].id : null,
+      price_type: "fijo",
+      price_amount: null,
     };
+    this.clearNewPhotos();
 
     this.showCreateModal = true;
   }
@@ -1813,7 +1928,58 @@ export class AdminTrabajosPage implements OnInit {
       return "Falta el punto de trabajo";
     }
 
+    const priceError = this.priceError(this.newJob.price_type, this.newJob.price_amount);
+    if (priceError) {
+      return priceError;
+    }
+
+    if (!this.newJob.encargado_id) {
+      return "Elige el encargado del trabajo";
+    }
+
     return null;
+  }
+
+  /** Fotos elegidas en "Nuevo trabajo" (se suben al crear). */
+  newPhotos: { file: File; preview: string }[] = [];
+
+  addNewPhotos(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    for (const file of Array.from(input.files ?? [])) {
+      if (!file.type.startsWith("image/")) continue;
+      this.newPhotos.push({ file, preview: URL.createObjectURL(file) });
+    }
+    input.value = "";
+  }
+
+  removeNewPhoto(i: number) {
+    const [p] = this.newPhotos.splice(i, 1);
+    if (p) URL.revokeObjectURL(p.preview);
+  }
+
+  clearNewPhotos() {
+    this.newPhotos.forEach((p) => URL.revokeObjectURL(p.preview));
+    this.newPhotos = [];
+  }
+
+  /** Precio obligatorio: tipo + importe válido. */
+  priceError(type: string | null, amount: any): string | null {
+    if (!type || !["fijo", "hora", "dia"].includes(type)) {
+      return "Indica si el precio es fijo, por hora o por día";
+    }
+    const n = Number(amount);
+    if (amount === null || amount === "" || amount === undefined || !Number.isFinite(n) || n <= 0) {
+      return type === "fijo" ? "Indica el precio del trabajo" : `Indica cuánto se cobra ${type === "hora" ? "por hora" : "por día"}`;
+    }
+    return null;
+  }
+
+  priceSuffix(type: string | null): string {
+    return type === "hora" ? "€ / hora" : type === "dia" ? "€ / día" : "€";
+  }
+
+  priceSuffixText(type: string | null): string {
+    return type === "hora" ? " por hora" : type === "dia" ? " por día" : " (fijo)";
   }
 
   /* =========================
@@ -1836,11 +2002,31 @@ export class AdminTrabajosPage implements OnInit {
         job_date: this.newJob.job_date?.slice(0, 10),
 
         start_time: this.newJob.start_time?.slice(11, 16),
+
+        price_amount: Math.round(Number(this.newJob.price_amount) * 100) / 100,
       };
 
-      await this.supabase.createJob(payload);
+      const created: any = await this.supabase.createJob(payload);
+
+      // Fotos: se suben cuando el trabajo ya existe (la ruta lleva su id)
+      let failed = 0;
+      for (const p of this.newPhotos) {
+        try {
+          await this.supabase.uploadJobPhoto(created.id, p.file);
+        } catch {
+          failed++;
+        }
+      }
+      this.clearNewPhotos();
 
       this.showCreateModal = false;
+
+      if (failed > 0) {
+        await this.showError(
+          "Trabajo creado",
+          `No se ${failed === 1 ? "pudo subir 1 foto" : `pudieron subir ${failed} fotos`}. Puedes añadirlas desde el detalle del trabajo.`,
+        );
+      }
 
       await this.load();
     } catch (err) {
@@ -1871,37 +2057,8 @@ export class AdminTrabajosPage implements OnInit {
       participants: [],
     };
 
+    this.closingMode = false;
     this.showDetailModal = true;
-  }
-
-  /* =========================
-     CAMBIO ESTADO
-  ========================== */
-
-  onStatusChange() {
-    // El bloque de finalización
-    // aparece automáticamente cuando
-    // selectedJob.status === "finalizado".
-  }
-
-  /* =========================
-     AGREGAR PARTICIPANTE
-  ========================== */
-
-  addParticipantRow() {
-    this.finalizeData.participants.push({
-      employee_id: null,
-      hours_or_days: null,
-      amount_earned: null,
-    });
-  }
-
-  /* =========================
-     ELIMINAR PARTICIPANTE
-  ========================== */
-
-  removeParticipantRow(i: number) {
-    this.finalizeData.participants.splice(i, 1);
   }
 
   /* =========================
@@ -1916,8 +2073,21 @@ export class AdminTrabajosPage implements OnInit {
     }
 
     try {
+      if (!this.selectedJob.encargado_id) {
+        await this.showError("Revisa el trabajo", "Elige un encargado para este trabajo.");
+        return;
+      }
+      const priceError = this.priceError(this.selectedJob.price_type, this.selectedJob.price_amount);
+      if (priceError) {
+        await this.showError("Revisa el precio", priceError);
+        return;
+      }
+
       await this.supabase.updateJob(this.selectedJob.id, {
-        status: this.selectedJob.status,
+        status: "confirmado",
+        encargado_id: this.selectedJob.encargado_id,
+        price_type: this.selectedJob.price_type,
+        price_amount: Math.round(Number(this.selectedJob.price_amount) * 100) / 100,
       });
 
       this.showDetailModal = false;
@@ -1925,64 +2095,6 @@ export class AdminTrabajosPage implements OnInit {
       await this.load();
     } catch (err) {
       await this.showError("No se pudo guardar el estado", err);
-    }
-  }
-
-  /* =========================
-     FINALIZAR TRABAJO
-  ========================== */
-
-  async finalizeJob() {
-    if (
-      !this.finalizeData.completion_date ||
-      !this.finalizeData.completion_time ||
-      !this.finalizeData.duration_value ||
-      !this.finalizeData.total_cost
-    ) {
-      await this.showError(
-        "Revisa el formulario",
-        "Completa fecha, hora, duración y costo total antes de finalizar.",
-      );
-
-      return;
-    }
-
-    try {
-      await this.supabase.updateJob(this.selectedJob.id, {
-        status: "finalizado",
-
-        completion_date: this.finalizeData.completion_date?.slice(0, 10),
-
-        completion_time: this.finalizeData.completion_time?.slice(11, 16),
-
-        duration_value: this.finalizeData.duration_value,
-
-        duration_unit: this.finalizeData.duration_unit,
-
-        total_cost: this.finalizeData.total_cost,
-      });
-
-      for (const p of this.finalizeData.participants) {
-        if (!p.employee_id) {
-          continue;
-        }
-
-        await this.supabase.addJobParticipant({
-          job_id: this.selectedJob.id,
-
-          employee_id: p.employee_id,
-
-          hours_or_days: p.hours_or_days,
-
-          amount_earned: p.amount_earned,
-        });
-      }
-
-      this.showDetailModal = false;
-
-      await this.load();
-    } catch (err) {
-      await this.showError("No se pudo finalizar el trabajo", err);
     }
   }
 

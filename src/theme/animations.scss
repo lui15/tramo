@@ -1,0 +1,240 @@
+// =====================================================================
+// ANIMACIONES GLOBALES (todas las pantallas y roles)
+// MotionService pone en cada pantalla:
+//   .t-pre  mientras Ionic hace la transición (los cuadros esperan ocultos)
+//   .t-anim cuando la pantalla ya está quieta (los cuadros aparecen)
+// Así las animaciones se VEN siempre. Probado en Chrome con estos mismos
+// estilos: los cuadros pasan de invisibles a visibles en ~1 s, en cascada.
+// fill-mode "backwards": al terminar no queda ningún transform.
+// =====================================================================
+
+$t-ease: cubic-bezier(0.22, 0.7, 0.2, 1);
+$t-soft: cubic-bezier(0.25, 0.8, 0.25, 1);
+
+// Bloques grandes de cada pantalla (hijos directos del contenedor)
+$t-wraps: ".t-page", ".fin-wrap", ".page-wrap", ".form-wrap", ".trab-wrap", ".history-wrap", ".sp-wrap";
+
+// Cuadros: tarjetas, filas, mosaicos… de cualquier pantalla
+$t-boxes: (
+  "[class*='card']",
+  "[class*='tile']",
+  "[class*='-row']",
+  ".t-row",
+  ".t-kpi",
+  ".e-group",
+  ".v-summary > div",
+  ".t-month",
+  ".t-section",
+  ".t-list",
+  ".jf-alert",
+  ".jf-banner",
+  ".m-hero",
+  ".t-hero",
+  ".activity-section",
+  ".jobs-section",
+  ".employees-section",
+  ".recent-section",
+  ".sp-member",
+  ".employee-row",
+  ".md-all-row",
+  "ion-item-sliding"
+);
+
+@function t-join($list, $prefix) {
+  $out: "";
+  @each $s in $list {
+    $out: if($out == "", "#{$prefix} #{$s}", "#{$out}, #{$prefix} #{$s}");
+  }
+  @return $out;
+}
+
+@keyframes tRise {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tPopSoft {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tTabBounce {
+  0% {
+    transform: scale(0.8);
+  }
+  55% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes tFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+// ---------- 0. Mientras entra la pantalla: los cuadros esperan ocultos ----------
+#{t-join($t-boxes, ".t-pre ion-content")} {
+  opacity: 0;
+}
+@each $w in $t-wraps {
+  .t-pre #{$w} > * {
+    opacity: 0;
+  }
+}
+
+// ---------- 1. Bloques de cada pantalla, uno detrás de otro ----------
+@each $w in $t-wraps {
+  .t-anim #{$w} > * {
+    animation: tRise 0.95s $t-ease backwards;
+  }
+  @for $i from 1 through 14 {
+    .t-anim #{$w} > *:nth-child(#{$i}) {
+      animation-delay: #{($i - 1) * 120}ms;
+    }
+  }
+}
+
+// ---------- 2. Cuadros dentro de los bloques (en cascada) ----------
+#{t-join($t-boxes, ".t-anim ion-content")} {
+  animation: tPopSoft 1s $t-soft backwards;
+}
+@for $i from 1 through 14 {
+  #{t-join($t-boxes, ".t-anim ion-content")} {
+    &:nth-child(#{$i}) {
+      animation-delay: #{150 + ($i - 1) * 100}ms;
+    }
+  }
+}
+
+// Iconos de tarjetas principales: flotan un poco al aparecer
+.t-anim .hero-icon-circle,
+.t-anim .t-hero-icon {
+  animation: tFloat 2.6s ease-in-out 1.1s 2;
+}
+
+// ---------- Fichas y formularios en modales ----------
+.v-form,
+.e-sheet,
+.jf {
+  > * {
+    animation: tRise 0.8s $t-ease backwards;
+  }
+  @for $i from 1 through 14 {
+    > *:nth-child(#{$i}) {
+      animation-delay: #{100 + ($i - 1) * 80}ms;
+    }
+  }
+}
+
+// ---------- Respuesta al toque ----------
+.t-row,
+.t-tile,
+.v-card,
+.job-card,
+.employee-row,
+.sp-member,
+.e-group,
+.stat-card,
+.jf-chip,
+.jf-btn,
+.t-month-arrow,
+.jf-seg button,
+.e-tabs button,
+.nt-item,
+.v-add-btn,
+.ph-theme,
+.ph-gear {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.2s ease,
+    background-color 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+ion-button {
+  transition: transform 0.18s ease;
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+// Nombre del mes al cambiar
+.t-month-current strong {
+  display: inline-block;
+  animation: tFadeIn 0.5s ease backwards;
+}
+
+// Barra inferior: la pestaña activa rebota
+.tb-item.tb-active .tb-pill {
+  animation: tTabBounce 0.45s $t-soft;
+}
+.tb-item.tb-active .tb-label {
+  animation: tFadeIn 0.35s ease;
+}
+
+// ---------- Reducir movimiento ----------
+@media (prefers-reduced-motion: reduce) {
+  .t-pre ion-content *,
+  .t-pre ion-content {
+    opacity: 1 !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// Cambio de modo claro/oscuro: los colores se funden en vez de saltar
+html.t-theme-switching,
+html.t-theme-switching *,
+html.t-theme-switching *::before,
+html.t-theme-switching *::after {
+  transition:
+    background-color 0.6s ease,
+    background 0.6s ease,
+    color 0.6s ease,
+    border-color 0.6s ease,
+    fill 0.6s ease !important;
+}
