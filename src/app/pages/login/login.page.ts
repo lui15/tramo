@@ -1,7 +1,7 @@
 import { Component } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import { Router, RouterLink } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 
 import {
   IonContent,
@@ -11,17 +11,19 @@ import {
   IonText,
   IonSpinner,
   IonIcon,
+  AlertController,
 } from "@ionic/angular/standalone";
 
 import { addIcons } from "ionicons";
 import {
-  mailOutline,
+  personOutline,
   lockClosedOutline,
   logInOutline,
-  personAddOutline,
+  fingerPrintOutline,
 } from "ionicons/icons";
 
-import { SupabaseService } from "../../services/supabase.service";
+import { SupabaseService, homeForRole } from "../../services/supabase.service";
+import { BiometricService } from "../../services/biometric.service";
 
 @Component({
   selector: "app-login",
@@ -30,7 +32,6 @@ import { SupabaseService } from "../../services/supabase.service";
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     IonContent,
     IonItem,
     IonInput,
@@ -45,7 +46,7 @@ import { SupabaseService } from "../../services/supabase.service";
       <div class="login-wrapper">
         <!-- LOGO / MARCA -->
         <div class="brand-section">
-          <div class="brand-icon">T</div>
+          <img class="brand-logo" src="assets/logo/tramo-mark.svg" alt="Tramo" width="72" height="72" />
 
           <div class="brand-name">Tramo</div>
 
@@ -60,18 +61,21 @@ import { SupabaseService } from "../../services/supabase.service";
             <p>Inicia sesión para continuar</p>
           </div>
 
-          <!-- CORREO -->
+          <!-- USUARIO -->
           <div class="field-wrapper">
-            <label class="field-label"> Correo electrónico </label>
+            <label class="field-label"> Usuario o correo </label>
 
             <ion-item class="input-item" lines="none">
-              <ion-icon name="mail-outline" slot="start"></ion-icon>
+              <ion-icon name="person-outline" slot="start"></ion-icon>
 
               <ion-input
-                type="email"
-                placeholder="tu@correo.com"
-                [(ngModel)]="email"
-                autocomplete="email"
+                type="text"
+                placeholder="Tu usuario o correo"
+                [(ngModel)]="username"
+                autocomplete="username"
+                autocapitalize="off"
+                [spellcheck]="false"
+                (keyup.enter)="login()"
               ></ion-input>
             </ion-item>
           </div>
@@ -88,6 +92,7 @@ import { SupabaseService } from "../../services/supabase.service";
                 placeholder="Introduce tu contraseña"
                 [(ngModel)]="password"
                 autocomplete="current-password"
+                (keyup.enter)="login()"
               ></ion-input>
             </ion-item>
           </div>
@@ -115,19 +120,26 @@ import { SupabaseService } from "../../services/supabase.service";
             </ng-container>
           </ion-button>
 
-          <!-- REGISTRO -->
+          <!-- HUELLA DIGITAL -->
+          <ion-button
+            *ngIf="bioEnabled"
+            class="bio-button"
+            expand="block"
+            fill="outline"
+            (click)="loginWithBiometric()"
+            [disabled]="loading"
+          >
+            <ion-icon name="finger-print-outline" slot="start"></ion-icon>
+            Entrar con huella
+            <span class="bio-user" *ngIf="bioUser">· {{ bioUser }}</span>
+          </ion-button>
+
+          <!-- AYUDA DE ACCESO -->
           <div class="register-section">
-            <span> ¿No tienes una cuenta? </span>
-
-            <ion-button
-              class="register-button"
-              fill="clear"
-              routerLink="/register"
-            >
-              <ion-icon name="person-add-outline" slot="start"></ion-icon>
-
-              Regístrate
-            </ion-button>
+            <span>
+              ¿Has olvidado tu contraseña o no tienes cuenta? Pide a
+              administración que te la restablezca o te dé de alta.
+            </span>
           </div>
         </div>
 
@@ -148,7 +160,7 @@ import { SupabaseService } from "../../services/supabase.service";
       ===================================================== */
 
       .login-content {
-        --background: #f8fafc;
+        --background: var(--t-surface-2);
       }
 
       .login-wrapper {
@@ -178,6 +190,14 @@ import { SupabaseService } from "../../services/supabase.service";
         margin-bottom: 28px;
       }
 
+      .brand-logo {
+        width: 72px;
+        height: 72px;
+        margin-bottom: 14px;
+        border-radius: 18px;
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
+      }
+
       .brand-icon {
         width: 58px;
         height: 58px;
@@ -188,7 +208,7 @@ import { SupabaseService } from "../../services/supabase.service";
 
         border-radius: 18px;
 
-        background: #1769ff;
+        background: var(--t-primary);
 
         color: #ffffff;
 
@@ -201,7 +221,7 @@ import { SupabaseService } from "../../services/supabase.service";
       }
 
       .brand-name {
-        color: #123b78;
+        color: var(--t-text);
 
         font-size: 28px;
         font-weight: 900;
@@ -214,7 +234,7 @@ import { SupabaseService } from "../../services/supabase.service";
       .brand-subtitle {
         margin-top: 8px;
 
-        color: #8994a6;
+        color: var(--t-muted);
 
         font-size: 12px;
         font-weight: 500;
@@ -230,9 +250,9 @@ import { SupabaseService } from "../../services/supabase.service";
         width: 100%;
         max-width: 420px;
 
-        background: #ffffff;
+        background: var(--t-surface);
 
-        border: 1px solid #e5eaf1;
+        border: 1px solid var(--t-border);
 
         border-radius: 24px;
 
@@ -254,7 +274,7 @@ import { SupabaseService } from "../../services/supabase.service";
       .welcome-section h1 {
         margin: 0;
 
-        color: #123b78;
+        color: var(--t-text);
 
         font-size: 23px;
         font-weight: 800;
@@ -267,7 +287,7 @@ import { SupabaseService } from "../../services/supabase.service";
       .welcome-section p {
         margin: 7px 0 0;
 
-        color: #61708a;
+        color: var(--t-muted);
 
         font-size: 13px;
         font-weight: 500;
@@ -286,14 +306,14 @@ import { SupabaseService } from "../../services/supabase.service";
 
         margin: 0 0 7px 3px;
 
-        color: #172b4d;
+        color: var(--t-text);
 
         font-size: 13px;
         font-weight: 700;
       }
 
       .input-item {
-        --background: #f8fafc;
+        --background: var(--t-surface-2);
         --border-color: transparent;
 
         --padding-start: 13px;
@@ -303,28 +323,27 @@ import { SupabaseService } from "../../services/supabase.service";
 
         width: 100%;
 
-        border: 1px solid #e5eaf1;
+        border: 1px solid var(--t-border);
 
         border-radius: 14px;
 
         box-sizing: border-box;
 
-        transition:
-          border-color 0.2s ease,
+        transition: border-color 0.2s ease,
           box-shadow 0.2s ease,
           background 0.2s ease;
       }
 
       .input-item:focus-within {
-        --background: #ffffff;
+        --background: var(--t-surface);
 
-        border-color: #1769ff;
+        border-color: var(--t-primary);
 
         box-shadow: 0 0 0 3px rgba(23, 105, 255, 0.09);
       }
 
       .input-item ion-icon {
-        color: #61708a;
+        color: var(--t-muted);
 
         font-size: 20px;
 
@@ -332,8 +351,8 @@ import { SupabaseService } from "../../services/supabase.service";
       }
 
       .input-item ion-input {
-        --color: #172b4d;
-        --placeholder-color: #8994a6;
+        --color: var(--t-text);
+        --placeholder-color: var(--t-muted);
 
         font-size: 14px;
         font-weight: 500;
@@ -370,11 +389,31 @@ import { SupabaseService } from "../../services/supabase.service";
          BOTÓN INICIAR SESIÓN
       ===================================================== */
 
+      .bio-button {
+        margin-top: 12px;
+        height: 52px;
+        --border-radius: 14px;
+        --border-color: var(--t-primary);
+        --color: var(--t-primary);
+        font-weight: 700;
+        text-transform: none;
+      }
+
+      .bio-button ion-icon {
+        font-size: 22px;
+      }
+
+      .bio-user {
+        margin-left: 4px;
+        font-weight: 500;
+        opacity: 0.75;
+      }
+
       .login-button {
-        --background: #1769ff;
-        --background-hover: #1260ed;
-        --background-activated: #1058dc;
-        --background-focused: #1769ff;
+        --background: var(--t-primary);
+        --background-hover: var(--t-primary);
+        --background-activated: var(--t-primary);
+        --background-focused: var(--t-primary);
 
         --color: #ffffff;
 
@@ -391,8 +430,7 @@ import { SupabaseService } from "../../services/supabase.service";
 
         letter-spacing: 0;
 
-        transition:
-          transform 0.15s ease,
+        transition: transform 0.15s ease,
           box-shadow 0.2s ease;
       }
 
@@ -420,14 +458,14 @@ import { SupabaseService } from "../../services/supabase.service";
       }
 
       .register-section > span {
-        color: #8994a6;
+        color: var(--t-muted);
 
         font-size: 12px;
         font-weight: 500;
       }
 
       .register-button {
-        --color: #1769ff;
+        --color: var(--t-primary);
 
         --padding-start: 5px;
         --padding-end: 5px;
@@ -559,57 +597,164 @@ import { SupabaseService } from "../../services/supabase.service";
   ],
 })
 export class LoginPage {
-  email = "";
+  username = "";
   password = "";
   loading = false;
   errorMessage = "";
+  bioEnabled = false;
+  bioUser: string | null = null;
+
+  private autoPrompted = false;
 
   constructor(
     private supabase: SupabaseService,
+    private biometric: BiometricService,
+    private alertCtrl: AlertController,
     private router: Router,
+    route: ActivatedRoute,
   ) {
     addIcons({
-      mailOutline,
+      personOutline,
       lockClosedOutline,
       logInOutline,
-      personAddOutline,
+      fingerPrintOutline,
     });
+
+    if (route.snapshot.queryParamMap.get("motivo") === "cuenta") {
+      this.errorMessage =
+        "Tu cuenta no está activa. Contacta con administración.";
+      void this.biometric.disable();
+    }
+  }
+
+  async ionViewWillEnter() {
+    this.bioEnabled = this.biometric.isEnabled() && (await this.biometric.isAvailable());
+    this.bioUser = this.biometric.enabledUser();
+
+    // Al abrir la app con la huella activada, se pide directamente una vez
+    if (this.bioEnabled && !this.autoPrompted && !this.errorMessage) {
+      this.autoPrompted = true;
+      setTimeout(() => void this.loginWithBiometric(), 300);
+    }
   }
 
   async login() {
     this.errorMessage = "";
 
-    if (!this.email || !this.password) {
-      this.errorMessage = "Completa correo y contraseña.";
+    const username = this.username.trim();
+
+    if (!username || !this.password) {
+      this.errorMessage = "Introduce tu usuario o correo y tu contraseña.";
+      return;
+    }
+
+    this.loading = true;
+    const password = this.password;
+
+    try {
+      const result = await this.supabase.signInWithUsername(username, password);
+
+      this.password = "";
+
+      if (!result.must_change_password) {
+        await this.offerBiometric(username, password);
+      }
+
+      await this.router.navigateByUrl(
+        result.must_change_password ? "/cuenta/clave" : homeForRole(result.role),
+        { replaceUrl: true },
+      );
+    } catch (err: any) {
+      this.errorMessage = err?.message || "Usuario o contraseña incorrectos.";
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async loginWithBiometric() {
+    if (this.loading) {
+      return;
+    }
+
+    this.errorMessage = "";
+
+    let creds: { username: string; password: string };
+
+    try {
+      creds = await this.biometric.unlock();
+    } catch (err: any) {
+      if (!this.biometric.isCancel(err)) {
+        this.errorMessage = err?.message || "No se pudo verificar la huella.";
+      }
       return;
     }
 
     this.loading = true;
 
     try {
-      const { error } = await this.supabase.signIn(this.email, this.password);
+      const result = await this.supabase.signInWithUsername(
+        creds.username,
+        creds.password,
+      );
 
-      if (error) {
-        throw error;
-      }
-
-      const profile = await this.supabase.getMyProfile();
-
-      if (!profile) {
-        throw new Error("No se encontró tu perfil.");
-      }
-
-      if (profile.role === "admin") {
-        this.router.navigateByUrl("/admin");
-      } else if (!profile.is_approved) {
-        this.router.navigateByUrl("/pending-approval");
-      } else {
-        this.router.navigateByUrl("/employee");
-      }
+      await this.router.navigateByUrl(
+        result.must_change_password ? "/cuenta/clave" : homeForRole(result.role),
+        { replaceUrl: true },
+      );
     } catch (err: any) {
-      this.errorMessage = err.message ?? "Correo o contraseña incorrectos.";
+      const message: string = err?.message || "";
+
+      // La contraseña guardada ya no es válida (cambiada o restablecida)
+      if (message.includes("incorrectos")) {
+        await this.biometric.disable();
+        this.bioEnabled = false;
+        this.username = creds.username;
+        this.errorMessage =
+          "Tu contraseña ha cambiado. Entra con la nueva contraseña para volver a activar la huella.";
+      } else {
+        this.errorMessage = message || "No se pudo iniciar sesión.";
+      }
     } finally {
       this.loading = false;
+    }
+  }
+
+  /** Tras entrar con contraseña, propone activar la huella (una vez). */
+  private async offerBiometric(username: string, password: string) {
+    try {
+      if (
+        this.biometric.isEnabled() ||
+        this.biometric.wasDeclined(username) ||
+        !(await this.biometric.isAvailable())
+      ) {
+        // Si ya estaba activada, mantener la contraseña guardada al día
+        if (this.biometric.isEnabled() && this.biometric.enabledUser() === username) {
+          await this.biometric.updatePassword(password);
+        }
+        return;
+      }
+
+      const alert = await this.alertCtrl.create({
+        header: "Acceso con huella",
+        message:
+          "¿Quieres entrar con tu huella digital la próxima vez? Tu contraseña se guardará cifrada en este móvil.",
+        buttons: [
+          { text: "Ahora no", role: "cancel" },
+          { text: "Activar", role: "confirm" },
+        ],
+      });
+
+      await alert.present();
+      const { role } = await alert.onDidDismiss();
+
+      if (role !== "confirm") {
+        this.biometric.markDeclined(username);
+        return;
+      }
+
+      await this.biometric.enable(username, password);
+    } catch {
+      // Si cancela la huella, se entra igualmente con normalidad
     }
   }
 }

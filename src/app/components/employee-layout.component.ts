@@ -1,19 +1,13 @@
 import { Component } from "@angular/core";
 import { IonRouterOutlet } from "@ionic/angular/standalone";
-import { EmployeeHeaderComponent } from "./employee-header.component";
 
+// Contenedor de las pantallas del rol. Cada pantalla trae su propia
+// cabecera (app-page-header) y su barra inferior.
 @Component({
   selector: "app-employee-layout",
   standalone: true,
-
-  imports: [IonRouterOutlet, EmployeeHeaderComponent],
-
-  template: `
-    <app-employee-header></app-employee-header>
-
-    <ion-router-outlet></ion-router-outlet>
-  `,
-
+  imports: [IonRouterOutlet],
+  template: `<ion-router-outlet></ion-router-outlet>`,
   styles: [
     `
       :host {

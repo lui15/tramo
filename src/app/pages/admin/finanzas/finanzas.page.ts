@@ -27,7 +27,8 @@ import {
 
 import { addIcons } from "ionicons";
 import { SupabaseService } from "../../../services/supabase.service";
-import { AdminTabbarComponent } from "../../../components/admin-tabbar.component";
+import { RoleTabbarComponent } from "../../../components/role-tabbar.component";
+import { Router } from "@angular/router";
 
 type ExpenseType =
   | "pago_vehiculo"
@@ -48,6 +49,7 @@ interface Expense {
   expense_time: string;
   created_at?: string;
   updated_at?: string;
+  created_by?: string | null;
 }
 
 interface FinancialActivity {
@@ -72,41 +74,34 @@ interface DayGroup {
   items: FinancialActivity[];
 }
 
+import { PageHeaderComponent } from "../../../components/page-header.component";
+
 @Component({
   selector: "app-admin-finanzas",
   standalone: true,
   imports: [
+    PageHeaderComponent,
     CommonModule,
     FormsModule,
     IonContent,
     IonIcon,
-    AdminTabbarComponent,
+    RoleTabbarComponent,
   ],
   template: `
+    <app-page-header title="Finanzas" [subtitle]="isSecretary ? 'Secretaría' : 'Empresa'"></app-page-header>
+
     <ion-content class="fin-content" [fullscreen]="false">
       <div class="fin-wrap" *ngIf="loaded">
         <!-- 1. SELECTOR DE MES (fijo arriba al hacer scroll) -->
-        <nav class="month-selector">
-          <button
-            type="button"
-            class="month-arrow"
-            (click)="previousMonth()"
-            aria-label="Mes anterior"
-          >
+        <nav class="t-month month-sticky">
+          <button type="button" class="t-month-arrow" (click)="previousMonth()" aria-label="Mes anterior">
             <ion-icon name="chevron-back-outline"></ion-icon>
           </button>
-
-          <div class="month-current">
-            <ion-icon name="calendar-outline"></ion-icon>
-            <strong>{{ currentMonthLabel }}</strong>
+          <div class="t-month-current">
+            <strong>{{ currentMonthLabel.split(" de ")[0] | titlecase }}</strong>
+            <span>{{ selectedMonth.getFullYear() }}</span>
           </div>
-
-          <button
-            type="button"
-            class="month-arrow"
-            (click)="nextMonth()"
-            aria-label="Mes siguiente"
-          >
+          <button type="button" class="t-month-arrow" (click)="nextMonth()" aria-label="Mes siguiente">
             <ion-icon name="chevron-forward-outline"></ion-icon>
           </button>
         </nav>
@@ -394,7 +389,7 @@ interface DayGroup {
     </div>
 
     <div class="admin-tabbar-container">
-      <app-admin-tabbar></app-admin-tabbar>
+      <app-role-tabbar></app-role-tabbar>
     </div>
   `,
   styles: [
@@ -403,14 +398,14 @@ interface DayGroup {
         /* Altura real del header del layout padre */
         --admin-header-offset: calc(78px + env(safe-area-inset-top));
 
-        --finance-bg: #f8fafc;
-        --finance-primary: #1769ff;
-        --finance-primary-dark: #123b78;
-        --finance-primary-light: #eaf1ff;
-        --finance-text: #172b4d;
-        --finance-text-soft: #61708a;
-        --finance-muted: #8994a6;
-        --finance-border: #e5eaf1;
+        --finance-bg: var(--t-surface-2);
+        --finance-primary: var(--t-primary);
+        --finance-primary-dark: var(--t-text);
+        --finance-primary-light: var(--t-primary-soft);
+        --finance-text: var(--t-text);
+        --finance-text-soft: var(--t-muted);
+        --finance-muted: var(--t-muted);
+        --finance-border: var(--t-border);
         --finance-orange: #e99316;
         --finance-orange-bg: #fff4e4;
         --finance-green: #299b45;
@@ -440,6 +435,12 @@ interface DayGroup {
 
       /* ---------- Selector de mes ---------- */
 
+      .month-sticky {
+        position: sticky;
+        top: var(--admin-header-offset);
+        z-index: 20;
+      }
+
       .month-selector {
         position: sticky;
         top: var(--admin-header-offset);
@@ -461,7 +462,7 @@ interface DayGroup {
         padding: 0;
         border: 1px solid var(--finance-border);
         border-radius: 14px;
-        background: #ffffff;
+        background: var(--t-surface);
         color: var(--finance-primary);
         font-size: 21px;
       }
@@ -478,7 +479,7 @@ interface DayGroup {
         min-height: 44px;
         border: 1px solid var(--finance-border);
         border-radius: 14px;
-        background: #ffffff;
+        background: var(--t-surface);
         color: var(--finance-primary-dark);
       }
 
@@ -502,7 +503,7 @@ interface DayGroup {
         padding: 22px 16px 20px;
         margin-bottom: 12px;
         text-align: center;
-        background: #ffffff;
+        background: var(--t-surface);
         border: 1px solid var(--finance-border);
         border-top: 5px solid var(--finance-teal);
         border-radius: 20px;
@@ -579,7 +580,7 @@ interface DayGroup {
         gap: 3px;
         padding: 12px 4px;
         text-align: center;
-        background: #ffffff;
+        background: var(--t-surface);
         border: 1px solid var(--finance-border);
         border-radius: 16px;
         box-shadow: var(--finance-shadow);
@@ -623,7 +624,7 @@ interface DayGroup {
       .debt-card {
         padding: 14px;
         margin-bottom: 18px;
-        background: #ffffff;
+        background: var(--t-surface);
         border: 1px solid var(--finance-border);
         border-radius: 18px;
         box-shadow: var(--finance-shadow);
@@ -702,7 +703,7 @@ interface DayGroup {
       .split-progress-fill {
         height: 100%;
         border-radius: inherit;
-        background: linear-gradient(90deg, #1769ff, #4385ff);
+        background: linear-gradient(90deg, var(--t-primary), #4385ff);
         transition: width 0.4s ease;
       }
 
@@ -740,7 +741,7 @@ interface DayGroup {
         padding: 0 16px;
         border: 1px solid var(--finance-border);
         border-radius: 999px;
-        background: #ffffff;
+        background: var(--t-surface);
         color: var(--finance-text-soft);
         font-family: inherit;
         font-size: 0.78rem;
@@ -774,7 +775,7 @@ interface DayGroup {
 
       .ledger {
         overflow: hidden;
-        background: #ffffff;
+        background: var(--t-surface);
         border: 1px solid var(--finance-border);
         border-radius: 16px;
         box-shadow: var(--finance-shadow);
@@ -787,7 +788,7 @@ interface DayGroup {
         min-height: 72px;
         padding: 12px;
         box-sizing: border-box;
-        border-bottom: 1px solid #edf0f4;
+        border-bottom: 1px solid var(--t-surface-2);
       }
 
       .ledger-row:last-child {
@@ -795,7 +796,7 @@ interface DayGroup {
       }
 
       .ledger-row.tappable:active {
-        background: #f6f8fb;
+        background: var(--t-surface-2);
       }
 
       .activity-icon {
@@ -826,7 +827,7 @@ interface DayGroup {
 
       .activity-icon.pago-vehiculo,
       .activity-icon.alquiler {
-        background: #edf4ff;
+        background: var(--t-primary-soft);
         color: var(--finance-primary);
       }
 
@@ -909,8 +910,8 @@ interface DayGroup {
         align-items: center;
         padding: 32px 18px;
         text-align: center;
-        background: #ffffff;
-        border: 1px dashed #dce7fa;
+        background: var(--t-surface);
+        border: 1px dashed var(--t-border);
         border-radius: 16px;
       }
 
@@ -984,7 +985,7 @@ interface DayGroup {
         overscroll-behavior: contain;
         padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
         box-sizing: border-box;
-        background: #ffffff;
+        background: var(--t-surface);
         border-radius: 24px 24px 0 0;
       }
 
@@ -1040,10 +1041,10 @@ interface DayGroup {
         min-height: 48px;
         padding: 0 13px;
         box-sizing: border-box;
-        border: 1px solid #dfe5ee;
+        border: 1px solid var(--t-border);
         border-radius: 13px;
         outline: none;
-        background: #ffffff;
+        background: var(--t-surface);
         color: var(--finance-text);
         font-family: inherit;
         font-size: 16px; /* evita el zoom automático en iOS */
@@ -1165,7 +1166,7 @@ interface DayGroup {
         right: 0;
         bottom: 0;
         z-index: 1000;
-        background: #ffffff;
+        background: var(--t-surface);
         border-top: 1px solid var(--finance-border);
         box-shadow: 0 -6px 20px rgba(24, 47, 83, 0.08);
         padding-bottom: env(safe-area-inset-bottom);
@@ -1271,7 +1272,15 @@ export class AdminFinanzasPage implements OnInit {
 
   expenseForm: Expense = this.emptyExpense();
 
-  constructor(private supabase: SupabaseService) {
+  /** La secretaría solo edita o borra los gastos que registró ella. */
+  readonly isSecretary: boolean;
+  private myId = "";
+
+  constructor(
+    private supabase: SupabaseService,
+    router: Router,
+  ) {
+    this.isSecretary = router.url.startsWith("/secretaria");
     addIcons({
       "wallet-outline": walletOutline,
       "time-outline": timeOutline,
@@ -1295,6 +1304,8 @@ export class AdminFinanzasPage implements OnInit {
   }
 
   async ngOnInit() {
+    const user = await this.supabase.getCurrentUser().catch(() => null);
+    this.myId = user?.id ?? "";
     await this.loadFinancialData();
   }
 
@@ -1659,7 +1670,15 @@ export class AdminFinanzasPage implements OnInit {
     this.showExpenseModal = true;
   }
 
+  canEditExpense(expense: Expense): boolean {
+    return !this.isSecretary || (!!this.myId && expense.created_by === this.myId);
+  }
+
   editExpense(expense: Expense) {
+    if (!this.canEditExpense(expense)) {
+      window.alert("Solo puedes modificar los gastos que has registrado tú.");
+      return;
+    }
     this.editingExpense = true;
     this.formError = "";
 

@@ -1,0 +1,689 @@
+/* =====================================================================
+   FLUJO DE CIERRE Y REVISIÓN DE TRABAJOS (jf-*)
+   Lo usan app-job-close-form y app-job-review.
+   ===================================================================== */
+.jf {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0 24px;
+}
+.jf-job {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  box-shadow: var(--t-shadow);
+}
+.jf-job-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: var(--t-primary-soft);
+  color: var(--t-primary);
+  flex-shrink: 0;
+}
+.jf-job strong {
+  display: block;
+  font-size: 15px;
+  color: var(--t-text);
+}
+.jf-job span {
+  font-size: 12px;
+  color: var(--t-muted);
+}
+.jf-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--t-radius-sm);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.jf-banner ion-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.jf-banner.warn {
+  background: var(--t-warning-soft);
+  color: var(--t-warning);
+}
+.jf-banner.info {
+  background: var(--t-primary-soft);
+  color: var(--t-primary);
+}
+.jf-banner.ok {
+  background: var(--t-success-soft);
+  color: var(--t-success);
+}
+.jf-banner.danger {
+  background: var(--t-danger-soft);
+  color: var(--t-danger);
+}
+.jf-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.jf-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--t-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.jf-label button {
+  border: 0;
+  background: none;
+  color: var(--t-primary);
+  font: inherit;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  padding: 0;
+}
+.jf-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  background: var(--t-surface-2);
+  border-radius: 14px;
+}
+.jf-seg button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--t-muted);
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.jf-seg button.on {
+  background: var(--t-surface);
+  color: var(--t-text);
+  box-shadow: var(--t-shadow);
+}
+.jf-stepper {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  align-items: center;
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.jf-stepper button {
+  height: 58px;
+  border: 0;
+  background: var(--t-surface-2);
+  color: var(--t-text);
+  font-size: 24px;
+  cursor: pointer;
+}
+.jf-stepper div {
+  text-align: center;
+}
+.jf-stepper input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--t-text);
+  outline: none;
+}
+.jf-stepper small {
+  display: block;
+  font-size: 11px;
+  color: var(--t-muted);
+}
+.jf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.jf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--t-border);
+  background: var(--t-surface);
+  color: var(--t-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jf-chip.on {
+  border-color: var(--t-primary);
+  background: var(--t-primary-soft);
+  color: var(--t-primary);
+}
+.jf-chip ion-icon {
+  font-size: 16px;
+}
+.jf-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--t-surface-3);
+  color: var(--t-text-2);
+  flex-shrink: 0;
+}
+.jf-chip.on .jf-avatar {
+  background: var(--t-primary);
+  color: var(--t-on-primary);
+}
+.jf-people {
+  display: flex;
+  flex-direction: column;
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  overflow: hidden;
+}
+.jf-person {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--t-border);
+}
+.jf-person:last-child {
+  border-bottom: 0;
+}
+.jf-person-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.jf-person-head .jf-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+}
+.jf-person-name {
+  flex: 1;
+  min-width: 0;
+}
+.jf-person-name strong {
+  display: block;
+  font-size: 14px;
+  color: var(--t-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jf-person-name span {
+  font-size: 12px;
+  color: var(--t-muted);
+}
+.jf-person-amount {
+  text-align: right;
+  font-weight: 800;
+  color: var(--t-text);
+  white-space: nowrap;
+}
+.jf-person-amount small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--t-muted);
+}
+.jf-x {
+  border: 0;
+  background: var(--t-danger-soft);
+  color: var(--t-danger);
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.jf-person-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.jf-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t-text-2);
+  cursor: pointer;
+  user-select: none;
+}
+.jf-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--t-primary);
+}
+.jf-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 40px;
+  border: 1px solid var(--t-border);
+  border-radius: 10px;
+  background: var(--t-surface-2);
+  font-size: 13px;
+  color: var(--t-muted);
+}
+.jf-mini input {
+  width: 66px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t-text);
+  outline: none;
+  text-align: right;
+}
+.jf-mini.missing {
+  border-color: var(--t-danger);
+  background: var(--t-danger-soft);
+}
+.jf-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--t-surface-3);
+  color: var(--t-text-2);
+}
+.jf-tag.fixed {
+  background: var(--t-purple-soft);
+  color: var(--t-purple);
+}
+.jf-tag.auto {
+  background: var(--t-success-soft);
+  color: var(--t-success);
+}
+.jf-tag.manual {
+  background: var(--t-warning-soft);
+  color: var(--t-warning);
+}
+.jf-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.jf-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: 14px;
+}
+.jf-input span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--t-muted);
+}
+.jf-input input,
+.jf-input textarea,
+.jf-input select {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--t-text);
+  outline: none;
+  width: 100%;
+  color-scheme: light dark;
+}
+.jf-input textarea {
+  resize: vertical;
+  min-height: 64px;
+  font-weight: 500;
+}
+.jf-input.big input {
+  font-size: 22px;
+  font-weight: 800;
+}
+.jf-input.missing {
+  border-color: var(--t-danger);
+}
+.jf-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  box-shadow: var(--t-shadow);
+}
+.jf-summary h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--t-text);
+}
+.jf-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--t-text-2);
+}
+.jf-summary-row strong {
+  color: var(--t-text);
+  white-space: nowrap;
+}
+.jf-summary-row.muted {
+  color: var(--t-muted);
+}
+.jf-summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 10px;
+  margin-top: 4px;
+  border-top: 1px dashed var(--t-border-strong);
+  font-weight: 800;
+  color: var(--t-text);
+}
+.jf-summary-total strong {
+  font-size: 22px;
+  letter-spacing: -0.4px;
+}
+.jf-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.jf-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.jf-btn ion-icon {
+  font-size: 19px;
+}
+.jf-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.jf-btn.primary {
+  background: var(--t-primary);
+  color: var(--t-on-primary);
+}
+.jf-btn.success {
+  background: var(--t-success);
+  color: #fff;
+}
+.jf-btn.ghost {
+  background: var(--t-surface);
+  border-color: var(--t-border);
+  color: var(--t-text);
+}
+.jf-btn.danger-ghost {
+  background: var(--t-danger-soft);
+  color: var(--t-danger);
+}
+.jf-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--t-muted);
+  text-align: center;
+}
+.jf-add {
+  display: flex;
+  gap: 8px;
+}
+.jf-add select {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--t-border);
+  background: var(--t-surface);
+  color: var(--t-text);
+  font: inherit;
+  font-size: 14px;
+}
+.jf-add button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--t-primary-soft);
+  color: var(--t-primary);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.jf-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+/* Modal a pantalla completa del flujo */
+.jf-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 6px;
+}
+.jf-modal-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--t-text);
+}
+.jf-modal-head button {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 0;
+  background: var(--t-surface-2);
+  color: var(--t-text);
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+/* Estado "En revisión" */
+.status-badge.pendiente_revision {
+  background: var(--t-warning-soft) !important;
+  color: var(--t-warning) !important;
+}
+
+/* Aviso "trabajos esperan revisión" (Inicio de admin y secretaría) */
+.jf-alert {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 0 0 14px;
+  border-radius: var(--t-radius);
+  background: var(--t-warning-soft);
+  color: var(--t-warning);
+  text-decoration: none;
+  font: inherit;
+}
+.jf-alert > ion-icon:first-child {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.jf-alert span {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.jf-alert strong {
+  display: block;
+  font-size: 14px;
+}
+
+/* Precio cobrado al cerrar */
+.jf-money {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 14px;
+  border: 1px solid var(--t-border);
+  border-radius: 14px;
+  background: var(--t-surface);
+}
+.jf-money input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--t-text);
+  outline: none;
+}
+.jf-money span {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--t-muted);
+}
+.jf-money.missing {
+  border-color: var(--t-danger);
+}
+.jf-block > .jf-hint {
+  text-align: left;
+  margin-bottom: 6px;
+}
+.jf-link {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--t-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Precio al crear/editar un trabajo (admin y secretaría) */
+.price-label {
+  margin: 4px 2px 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--t-text);
+}
+.price-seg {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 10px;
+}
+.price-seg button {
+  justify-content: center;
+}
+.price-help {
+  margin: 8px 4px 0;
+  font-size: 12px;
+  color: var(--t-muted);
+}
+
+/* Fotos al crear un trabajo */
+.new-photos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.new-photo {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--t-surface-2);
+  border: 1px solid var(--t-border);
+}
+.new-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.new-photo button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.new-photo.add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  border-style: dashed;
+  color: var(--t-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.new-photo.add ion-icon {
+  font-size: 22px;
+}

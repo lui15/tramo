@@ -1,9 +1,151 @@
-/* Variables de tema de Ionic para Tramo */
+/* =====================================================================
+   TRAMO — Sistema de diseño
+   Todos los colores de la app salen de estas variables (--t-*).
+   Modo oscuro: clase "ion-palette-dark" en <html> (ThemeService).
+   ===================================================================== */
+
 :root {
-  --ion-color-primary: #3880ff;
-  --ion-color-primary-rgb: 56, 128, 255;
+  /* Superficies */
+  --t-bg: #f4f6fa;
+  --t-surface: #ffffff;
+  --t-surface-2: #f6f8fb;
+  --t-surface-3: #eef2f7;
+  --t-border: #e6eaf0;
+  --t-border-strong: #d5dce6;
+
+  /* Texto */
+  --t-text: #0f172a;
+  --t-text-2: #334155;
+  --t-muted: #64748b;
+  --t-faint: #94a3b8;
+
+  /* Marca */
+  --t-primary: #2563eb;
+  --t-primary-strong: #1d4ed8;
+  --t-primary-soft: #eaf1ff;
+  --t-on-primary: #ffffff;
+
+  /* Estados */
+  --t-success: #059669;
+  --t-success-soft: #e6f6ef;
+  --t-warning: #d97706;
+  --t-warning-soft: #fff4e0;
+  --t-danger: #dc2626;
+  --t-danger-soft: #fdecec;
+  --t-purple: #7c3aed;
+  --t-purple-soft: #f2ebff;
+
+  /* Forma */
+  --t-radius-sm: 10px;
+  --t-radius: 16px;
+  --t-radius-lg: 22px;
+  --t-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04);
+  --t-shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.08);
+
+  --t-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  /* Compatibilidad con variables usadas en páginas existentes */
+  --tramo-bg: var(--t-bg);
+  --tramo-surface: var(--t-surface);
+  --tramo-input: var(--t-surface-2);
+  --tramo-text: var(--t-text);
+  --tramo-text-2: var(--t-text-2);
+  --tramo-muted: var(--t-muted);
+  --tramo-primary: var(--t-primary);
+  --tramo-primary-soft: var(--t-primary-soft);
+  --tramo-unread: var(--t-primary-soft);
+
+  /* Ionic */
+  --ion-font-family: var(--t-font);
+  --ion-background-color: var(--t-bg);
+  --ion-text-color: var(--t-text);
+  --ion-toolbar-background: var(--t-surface);
+  --ion-item-background: var(--t-surface);
+  --ion-card-background: var(--t-surface);
+  --ion-border-color: var(--t-border);
+
+  --ion-color-primary: #2563eb;
+  --ion-color-primary-rgb: 37, 99, 235;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #3171e0;
-  --ion-color-primary-tint: #4c8dff;
+  --ion-color-primary-shade: #1d4ed8;
+  --ion-color-primary-tint: #3b82f6;
+
+  --ion-color-success: #059669;
+  --ion-color-success-rgb: 5, 150, 105;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #047857;
+  --ion-color-success-tint: #10b981;
+
+  --ion-color-danger: #dc2626;
+  --ion-color-danger-rgb: 220, 38, 38;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #b91c1c;
+  --ion-color-danger-tint: #ef4444;
+}
+
+/* ---------------------------- MODO OSCURO ---------------------------- */
+html.ion-palette-dark {
+  /* Fondo, tarjetas y bordes bien diferenciados */
+  --t-bg: #0b1120;
+  --t-surface: #151f35;
+  --t-surface-2: #1b2640;
+  --t-surface-3: #24314f;
+  --t-border: #2c3a5c;
+  --t-border-strong: #3b4b74;
+
+  /* Textos con contraste suficiente sobre azul marino (≥ 4.5:1) */
+  --t-text: #f1f5fb;
+  --t-text-2: #d3dae6;
+  --t-muted: #aab4c8;
+  --t-faint: #8390aa;
+
+  --t-primary: #5b8cff;
+  --t-primary-strong: #7aa2ff;
+  --t-primary-soft: rgba(91, 140, 255, 0.16);
+  --t-on-primary: #ffffff;
+
+  --t-success: #34d399;
+  --t-success-soft: rgba(52, 211, 153, 0.14);
+  --t-warning: #fbbf24;
+  --t-warning-soft: rgba(251, 191, 36, 0.14);
+  --t-danger: #f87171;
+  --t-danger-soft: rgba(248, 113, 113, 0.14);
+  --t-purple: #a78bfa;
+  --t-purple-soft: rgba(167, 139, 250, 0.16);
+
+  --t-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+  --t-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
+
+  --ion-color-primary: #5b8cff;
+  --ion-color-primary-rgb: 91, 140, 255;
+  --ion-color-primary-shade: #4f7be0;
+  --ion-color-primary-tint: #6b98ff;
+
+  --ion-placeholder-color: #8390aa;
+  --ion-text-color: #f1f5fb;
+  --ion-text-color-rgb: 241, 245, 251;
+
+  color-scheme: dark;
+}
+
+/* Placeholders y campos nativos (fecha, hora, número) legibles */
+html.ion-palette-dark input::placeholder,
+html.ion-palette-dark textarea::placeholder {
+  color: var(--t-faint);
+  opacity: 1;
+}
+html.ion-palette-dark input,
+html.ion-palette-dark textarea,
+html.ion-palette-dark select {
+  color-scheme: dark;
+}
+html.ion-palette-dark ion-alert,
+html.ion-palette-dark ion-toast,
+html.ion-palette-dark ion-popover,
+html.ion-palette-dark ion-modal {
+  --ion-text-color: #f1f5fb;
 }

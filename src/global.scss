@@ -11,6 +11,84 @@
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
 
+/* Paleta oscura de Ionic (se activa con la clase ion-palette-dark) */
+@import "@ionic/angular/css/palettes/dark.class.css";
+
+html,
+body {
+  font-family: var(--t-font);
+  background: var(--t-bg);
+  color: var(--t-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+ion-content {
+  --background: var(--t-bg);
+}
+
+/* Botones sin mayúsculas forzadas (más moderno) */
+ion-button {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+/* Modales y alertas con el mismo estilo */
+ion-modal {
+  --border-radius: 24px;
+  --background: var(--t-bg);
+}
+
+ion-alert {
+  --background: var(--t-surface);
+}
+
+ion-alert .alert-wrapper {
+  border-radius: 20px !important;
+}
+
+ion-toast {
+  --border-radius: 14px;
+}
+
+ion-segment {
+  --background: var(--t-surface-3);
+}
+
+ion-segment-button {
+  --indicator-color: var(--t-surface);
+  --color: var(--t-muted);
+  --color-checked: var(--t-primary);
+}
+
+ion-searchbar {
+  --background: var(--t-surface-2) !important;
+  --color: var(--t-text) !important;
+  --placeholder-color: var(--t-muted) !important;
+  --icon-color: var(--t-muted) !important;
+}
+
+ion-item {
+  --color: var(--t-text);
+}
+
+ion-input,
+ion-textarea,
+ion-select {
+  --color: var(--t-text);
+  --placeholder-color: var(--t-faint);
+}
+
+ion-popover {
+  --background: var(--t-surface);
+}
+
+ion-action-sheet {
+  --background: var(--t-surface);
+  --color: var(--t-text);
+  --button-color: var(--t-text);
+}
+
 .balance-card {
   text-align: center;
   padding: 24px 16px;
@@ -18,5 +96,460 @@
   .amount {
     font-size: 2.2rem;
     font-weight: 700;
+  }
+}
+
+/* Alertas con credenciales: respetar saltos de línea y permitir copiar */
+.credentials-alert .alert-message {
+  white-space: pre-line;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* =====================================================================
+   COMPONENTES DE INTERFAZ COMPARTIDOS (prefijo t-)
+   ===================================================================== */
+.t-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 4px 16px 32px;
+  color: var(--t-text);
+}
+
+.t-section {
+  margin-top: 22px;
+}
+
+.t-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 2px 10px;
+
+  h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+  }
+
+  a,
+  button.t-link {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--t-primary);
+    text-decoration: none;
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+}
+
+.t-card {
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  box-shadow: var(--t-shadow);
+  padding: 16px;
+}
+
+/* Tarjeta principal destacada */
+.t-hero {
+  border-radius: var(--t-radius-lg);
+  padding: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.25);
+
+  .t-hero-label {
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
+  .t-hero-value {
+    display: block;
+    margin: 6px 0 2px;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+  }
+
+  .t-hero-sub {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+
+  .t-hero-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .t-hero-mini {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    padding: 10px 12px;
+
+    span {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 15px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+html.ion-palette-dark .t-hero {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+  box-shadow: none;
+}
+
+/* Indicadores */
+.t-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.t-kpi {
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  box-shadow: var(--t-shadow);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .t-kpi-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+  }
+
+  .t-kpi-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--t-muted);
+  }
+
+  .t-kpi-value {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Tonos para iconos */
+.tone-blue { background: var(--t-primary-soft); color: var(--t-primary); }
+.tone-green { background: var(--t-success-soft); color: var(--t-success); }
+.tone-orange { background: var(--t-warning-soft); color: var(--t-warning); }
+.tone-red { background: var(--t-danger-soft); color: var(--t-danger); }
+.tone-purple { background: var(--t-purple-soft); color: var(--t-purple); }
+.tone-gray { background: var(--t-surface-3); color: var(--t-muted); }
+
+/* Accesos rápidos */
+.t-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.t-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 12px;
+  border-radius: var(--t-radius);
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  box-shadow: var(--t-shadow);
+  color: var(--t-text);
+  text-decoration: none;
+  font: inherit;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  .t-tile-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+  }
+
+  .t-tile-label {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .t-tile-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--t-surface-3);
+    color: var(--t-muted);
+  }
+
+  &.t-tile-disabled {
+    opacity: 0.6;
+  }
+}
+
+/* Listas */
+.t-list {
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  box-shadow: var(--t-shadow);
+  overflow: hidden;
+}
+
+.t-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--t-border);
+  background: transparent;
+  color: var(--t-text);
+  text-align: left;
+  font: inherit;
+  text-decoration: none;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  .t-row-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    font-size: 19px;
+  }
+
+  .t-date {
+    width: 44px;
+    height: 46px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--t-primary-soft);
+    color: var(--t-primary);
+
+    strong {
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    span {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+  }
+
+  .t-row-main {
+    flex: 1;
+    min-width: 0;
+
+    strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    span {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--t-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .t-row-end {
+    text-align: right;
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 800;
+  }
+}
+
+.t-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.t-empty {
+  padding: 26px 16px;
+  text-align: center;
+  color: var(--t-muted);
+  font-size: 14px;
+
+  ion-icon {
+    display: block;
+    margin: 0 auto 8px;
+    font-size: 30px;
+    color: var(--t-faint);
+  }
+}
+
+.t-skeleton {
+  height: 70px;
+  border-radius: var(--t-radius);
+  background: linear-gradient(90deg, var(--t-surface-2), var(--t-surface-3), var(--t-surface-2));
+  background-size: 200% 100%;
+  animation: t-shimmer 1.2s infinite linear;
+}
+
+@keyframes t-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+/* =====================================================================
+   Selector de mes (Trabajos, Historial…)
+   ===================================================================== */
+.t-month {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px;
+  margin-bottom: 12px;
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  box-shadow: var(--t-shadow);
+}
+
+.t-month-arrow {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--t-border);
+  border-radius: 12px;
+  background: var(--t-surface-2);
+  color: var(--t-primary);
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 20px;
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+.t-month-current {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  color: var(--t-text);
+
+  strong {
+    font-size: 17px;
+    font-weight: 800;
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--t-muted);
+  }
+}
+
+.t-month-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+
+  > div {
+    padding: 10px 12px;
+    background: var(--t-surface);
+    border: 1px solid var(--t-border);
+    border-radius: 14px;
+  }
+
+  span {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--t-muted);
+  }
+
+  strong {
+    display: block;
+    margin-top: 2px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--t-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
