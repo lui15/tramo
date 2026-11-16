@@ -161,10 +161,22 @@ import {
                 <ion-icon name="call-outline"></ion-icon>
                 <span>Teléfono</span><strong class="link">{{ selected.client_phone }}</strong>
               </a>
-              <div>
-                <ion-icon name="location-outline"></ion-icon>
-                <span>Dirección</span><strong>{{ selected.address_info || "—" }}</strong>
-              </div>
+              <ng-container *ngIf="selected.job_type === 'mudanza'; else encWorkTpl">
+                <div>
+                  <ion-icon name="location-outline"></ion-icon>
+                  <span>📦 Recogida</span><strong>{{ selected.pickup_point || "—" }}</strong>
+                </div>
+                <div>
+                  <ion-icon name="flag-outline"></ion-icon>
+                  <span>🏁 Entrega</span><strong>{{ selected.dropoff_point || "—" }}</strong>
+                </div>
+              </ng-container>
+              <ng-template #encWorkTpl>
+                <div>
+                  <ion-icon name="location-outline"></ion-icon>
+                  <span>Dirección</span><strong>{{ selected.work_point || selected.address_info || "—" }}</strong>
+                </div>
+              </ng-template>
               <div>
                 <ion-icon name="calendar-outline"></ion-icon>
                 <span>Fecha</span><strong>{{ fmtDate(selected.job_date) }} · {{ fmtTime(selected.start_time) || "sin hora" }}</strong>
@@ -194,6 +206,11 @@ import {
                 <ion-icon name="wallet-outline"></ion-icon>
                 <span>Cobrado</span><strong>{{ eur(selected.closed_price) }}</strong>
               </div>
+            </div>
+
+            <div class="enc-details" *ngIf="selected.details">
+              <strong>📝 Detalles del trabajo</strong>
+              <p>{{ selected.details }}</p>
             </div>
 
             <div class="enc-photos" *ngIf="selected.is_mine">
@@ -236,6 +253,24 @@ import {
   `,
   styles: [
     `
+      .enc-details {
+        margin: 4px 0 14px;
+        padding: 14px;
+        border-radius: 16px;
+        background: var(--t-surface);
+        border: 1px solid var(--t-border);
+      }
+      .enc-details strong {
+        font-size: 14px;
+        color: var(--t-text);
+      }
+      .enc-details p {
+        margin: 6px 0 0;
+        white-space: pre-wrap;
+        line-height: 1.5;
+        font-size: 14px;
+        color: var(--t-text-2);
+      }
       .enc-photos {
         margin: 4px 0 14px;
         padding: 14px;

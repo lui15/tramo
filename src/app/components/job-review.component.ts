@@ -52,6 +52,11 @@ interface ReviewRow extends ReviewPerson {
         </div>
       </div>
 
+      <div class="jf-banner info" *ngIf="job.details">
+        <ion-icon name="briefcase-outline"></ion-icon>
+        <div><strong>Detalles del trabajo:</strong> {{ job.details }}</div>
+      </div>
+
       <div class="jf-banner info" *ngIf="job.close_note">
         <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
         <div><strong>Nota del encargado:</strong> {{ job.close_note }}</div>

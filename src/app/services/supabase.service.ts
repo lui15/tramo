@@ -204,6 +204,45 @@ export const PRICE_TYPE_LABELS: Record<JobPriceType, string> = {
   dia: "Por día",
 };
 
+export type ServiceType = "mudanza" | "montaje" | "reforma";
+
+export const SERVICE_LABELS: Record<ServiceType, string> = {
+  mudanza: "Mudanza",
+  montaje: "Montaje",
+  reforma: "Reforma",
+};
+
+/** Asociado: persona o empresa a la que se pasan trabajos (no es usuario). */
+export interface Associate {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  specialties: ServiceType[];
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+/** Trabajo que el administrador pasa a un asociado como contratista. */
+export interface ContractJob {
+  id: string;
+  service_type: ServiceType;
+  associate_id: string;
+  client_name: string;
+  client_phone: string | null;
+  pickup_point: string | null;
+  dropoff_point: string | null;
+  work_point: string | null;
+  job_date: string;
+  start_time: string | null;
+  details: string | null;
+  budget_amount: number;
+  my_earning: number;
+  status: "confirmado" | "cobrado";
+  paid_at: string | null;
+  created_at: string;
+}
+
 export type VehicleType = "furgoneta" | "camion" | "coche" | "moto" | "otro";
 export type VehicleOwnership = "financiado" | "comprado";
 
@@ -293,6 +332,10 @@ export interface EncargadoJob {
   price_amount: number | null;
   closed_price: number | null;
   photo_count: number;
+  pickup_point: string | null;
+  dropoff_point: string | null;
+  work_point: string | null;
+  details: string | null;
 }
 
 export interface MyMoneyJob {
@@ -770,6 +813,87 @@ export class SupabaseService {
     const { error } = await this.supabase.from("job_photos").delete().eq("id", photo.id);
     if (error) throw new Error(this.friendlyDbError(error.message));
     await this.supabase.storage.from("job-photos").remove([photo.path]);
+  }
+
+  // =========================================================
+  // ASOCIADOS Y TRABAJOS COMO CONTRATISTA (solo administrador)
+  // =========================================================
+
+  async listAssociates(includeInactive = false): Promise<Associate[]> {
+    let q = this.supabase.from("associates").select("*").order("full_name");
+    if (!includeInactive) q = q.eq("is_active", true);
+    const { data, error } = await q;
+    if (error) throw new Error(this.friendlyDbError(error.message));
+    return (data ?? []) as Associate[];
+  }
+
+  async saveAssociate(a: Partial<Associate>): Promise<Associate> {
+    const payload = {
+      full_name: (a.full_name ?? "").trim(),
+      phone: a.phone?.trim() || null,
+      specialties: a.specialties ?? [],
+      notes: a.notes?.trim() || null,
+      is_active: a.is_active ?? true,
+    };
+    const query = a.id
+      ? this.supabase.from("associates").update(payload).eq("id", a.id)
+      : this.supabase.from("associates").insert(payload);
+    const { data, error } = await query.select().single();
+    if (error) throw new Error(this.friendlyDbError(error.message));
+    return data as Associate;
+  }
+
+  async listContractJobs(year: number, month: number): Promise<ContractJob[]> {
+    const from = `${year}-${String(month).padStart(2, "0")}-01`;
+    const next = month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const { data, error } = await this.supabase
+      .from("contract_jobs")
+      .select("*")
+      .gte("job_date", from)
+      .lt("job_date", next)
+      .order("job_date", { ascending: true });
+    if (error) throw new Error(this.friendlyDbError(error.message));
+    return (data ?? []) as ContractJob[];
+  }
+
+  async saveContractJob(j: Partial<ContractJob>): Promise<ContractJob> {
+    const payload: any = {
+      service_type: j.service_type,
+      associate_id: j.associate_id,
+      client_name: (j.client_name ?? "").trim(),
+      client_phone: j.client_phone?.trim() || null,
+      pickup_point: j.service_type === "mudanza" ? j.pickup_point?.trim() || null : null,
+      dropoff_point: j.service_type === "mudanza" ? j.dropoff_point?.trim() || null : null,
+      work_point: j.service_type !== "mudanza" ? j.work_point?.trim() || null : null,
+      job_date: j.job_date,
+      start_time: j.start_time || null,
+      details: j.details?.trim() || null,
+      budget_amount: j.budget_amount,
+      my_earning: j.my_earning,
+      status: j.status ?? "confirmado",
+    };
+    const query = j.id
+      ? this.supabase.from("contract_jobs").update(payload).eq("id", j.id)
+      : this.supabase.from("contract_jobs").insert(payload);
+    const { data, error } = await query.select().single();
+    if (error) throw new Error(this.friendlyDbError(error.message));
+    return data as ContractJob;
+  }
+
+  async setContractJobStatus(id: string, status: "confirmado" | "cobrado"): Promise<ContractJob> {
+    const { data, error } = await this.supabase
+      .from("contract_jobs")
+      .update({ status })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw new Error(this.friendlyDbError(error.message));
+    return data as ContractJob;
+  }
+
+  async deleteContractJob(id: string) {
+    const { error } = await this.supabase.from("contract_jobs").delete().eq("id", id);
+    if (error) throw new Error(this.friendlyDbError(error.message));
   }
 
   // =========================================================
