@@ -28,7 +28,7 @@ import {
 import { addIcons } from "ionicons";
 import { SupabaseService } from "../../../services/supabase.service";
 import { RoleTabbarComponent } from "../../../components/role-tabbar.component";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 
 type ExpenseType =
   | "pago_vehiculo"
@@ -86,6 +86,7 @@ import { PageHeaderComponent } from "../../../components/page-header.component";
     IonContent,
     IonIcon,
     RoleTabbarComponent,
+    RouterLink,
   ],
   template: `
     <app-page-header title="Finanzas" [subtitle]="isSecretary ? 'Secretaría' : 'Empresa'"></app-page-header>
@@ -135,6 +136,27 @@ import { PageHeaderComponent } from "../../../components/page-header.component";
               {{ displayedExpenses | number: "1.2-2" }}<small>€</small>
             </span>
           </div>
+        </section>
+
+        <!-- 3b. COMO CONTRATISTA (solo administrador) -->
+        <section class="contract-fin" *ngIf="!isSecretary">
+          <div class="contract-fin-head">
+            <strong>🤝 Como contratista</strong>
+            <a routerLink="/admin/asociados">Asociados ›</a>
+          </div>
+          <div class="contract-fin-grid">
+            <div class="contract-box">
+              <span>Presupuestos del mes</span>
+              <strong>{{ contract.budget | number: "1.2-2" }} €</strong>
+              <small>{{ contract.count }} {{ contract.count === 1 ? "trabajo" : "trabajos" }}</small>
+            </div>
+            <div class="contract-box mine">
+              <span>Lo que gano yo</span>
+              <strong>{{ contract.earning | number: "1.2-2" }} €</strong>
+              <small>{{ contract.paid | number: "1.2-2" }} € cobrado · {{ contract.earning - contract.paid | number: "1.2-2" }} € por cobrar</small>
+            </div>
+          </div>
+          <p class="contract-note">Va aparte, no se suma a "Generado". Los trabajos se gestionan en Trabajos › Como contratista.</p>
         </section>
 
         <!-- 4. DEUDA CON EMPLEADOS (acumulado hasta el mes) -->
@@ -1160,6 +1182,69 @@ import { PageHeaderComponent } from "../../../components/page-header.component";
         }
       }
 
+      .contract-fin {
+        margin: 0 0 16px;
+        padding: 16px;
+        border-radius: 22px;
+        background: var(--t-surface);
+        border: 1px solid var(--t-border);
+        box-shadow: var(--t-shadow);
+      }
+      .contract-fin-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .contract-fin-head strong {
+        font-size: 16px;
+        color: var(--t-text);
+      }
+      .contract-fin-head a {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--t-primary);
+        text-decoration: none;
+      }
+      .contract-fin-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .contract-box {
+        display: grid;
+        gap: 3px;
+        padding: 14px;
+        border-radius: 16px;
+        background: var(--t-surface-2);
+      }
+      .contract-box.mine {
+        background: linear-gradient(135deg, var(--t-success), #0ea5a4);
+      }
+      .contract-box span {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--t-muted);
+      }
+      .contract-box strong {
+        font-size: 19px;
+        font-weight: 800;
+        color: var(--t-text);
+      }
+      .contract-box small {
+        font-size: 11px;
+        color: var(--t-muted);
+      }
+      .contract-box.mine span,
+      .contract-box.mine small,
+      .contract-box.mine strong {
+        color: #fff;
+      }
+      .contract-note {
+        margin: 10px 2px 0;
+        font-size: 12px;
+        color: var(--t-muted);
+      }
       .admin-tabbar-container {
         position: fixed;
         left: 0;
@@ -1410,6 +1495,7 @@ export class AdminFinanzasPage implements OnInit {
     );
 
     this.updateFilteredActivities();
+    void this.loadContract();
   }
 
   nextMonth() {
@@ -1420,6 +1506,7 @@ export class AdminFinanzasPage implements OnInit {
     );
 
     this.updateFilteredActivities();
+    void this.loadContract();
   }
 
   setFilter(filter: ActivityFilter) {
@@ -1432,7 +1519,29 @@ export class AdminFinanzasPage implements OnInit {
      CARGA DE DATOS
   ========================================================= */
 
+  /** Resumen de trabajos como contratista del mes (solo administrador). */
+  contract = { budget: 0, earning: 0, paid: 0, count: 0 };
+
+  private async loadContract() {
+    if (this.isSecretary) return;
+    const y = this.selectedMonth.getFullYear();
+    const m = this.selectedMonth.getMonth() + 1;
+    try {
+      const jobs = await this.supabase.listContractJobs(y, m);
+      if (y !== this.selectedMonth.getFullYear() || m !== this.selectedMonth.getMonth() + 1) return;
+      this.contract = {
+        budget: jobs.reduce((t, j) => t + (Number(j.budget_amount) || 0), 0),
+        earning: jobs.reduce((t, j) => t + (Number(j.my_earning) || 0), 0),
+        paid: jobs.filter((j) => j.status === "cobrado").reduce((t, j) => t + (Number(j.my_earning) || 0), 0),
+        count: jobs.length,
+      };
+    } catch {
+      this.contract = { budget: 0, earning: 0, paid: 0, count: 0 };
+    }
+  }
+
   private async loadFinancialData() {
+    void this.loadContract();
     try {
       this.loaded = false;
 

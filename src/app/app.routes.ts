@@ -150,6 +150,15 @@ export const routes: Routes = [
       },
 
       // =================================================
+      // ADMIN / ASOCIADOS (contratista)
+      // =================================================
+      {
+        path: "asociados",
+        loadComponent: () =>
+          import("./pages/admin/asociados/asociados.page").then((m) => m.AsociadosPage),
+      },
+
+      // =================================================
       // ADMIN / VEHÍCULOS
       // =================================================
       {

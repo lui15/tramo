@@ -145,6 +145,10 @@ const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "
               <span class="t-tile-icon tone-red"><ion-icon name="notifications-outline"></ion-icon></span>
               <span class="t-tile-label">Avisos</span>
             </a>
+            <a class="t-tile" routerLink="/admin/asociados">
+              <span class="t-tile-icon tone-green"><ion-icon name="people-outline"></ion-icon></span>
+              <span class="t-tile-label">Asociados</span>
+            </a>
             <a class="t-tile" routerLink="/admin/vehiculos">
               <span class="t-tile-icon tone-blue"><ion-icon name="car-outline"></ion-icon></span>
               <span class="t-tile-label">Vehículos</span>

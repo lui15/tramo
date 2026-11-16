@@ -1,4 +1,5 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ViewChild } from "@angular/core";
+import { Router } from "@angular/router";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 
@@ -21,6 +22,7 @@ import {
   IonItemOption,
   IonButton,
   AlertController,
+  ActionSheetController,
 } from "@ionic/angular/standalone";
 
 import { addIcons } from "ionicons";
@@ -51,6 +53,7 @@ import { PageHeaderComponent } from "../../../components/page-header.component";
 import { JobCloseFormComponent } from "../../../components/job-close-form.component";
 import { JobPhotosComponent } from "../../../components/job-photos.component";
 import { JobReviewComponent } from "../../../components/job-review.component";
+import { ContractJobsComponent } from "../../../components/contract-jobs.component";
 import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
 
 @Component({
@@ -61,6 +64,7 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
     JobCloseFormComponent,
     JobPhotosComponent,
     JobReviewComponent,
+    ContractJobsComponent,
     RoleTabbarComponent,
     CommonModule,
     FormsModule,
@@ -108,6 +112,12 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
           <span class="cta-sub"> Añade un nuevo trabajo al registro </span>
         </section>
 
+        <!-- MIS TRABAJOS / COMO CONTRATISTA (solo administrador) -->
+        <section class="view-switch" *ngIf="isAdmin">
+          <button type="button" [class.on]="view === 'mine'" (click)="view = 'mine'">🏠 Mis trabajos</button>
+          <button type="button" [class.on]="view === 'contract'" (click)="view = 'contract'">🤝 Como contratista</button>
+        </section>
+
         <!-- =========================
              LISTA DE TRABAJOS
         ========================== -->
@@ -125,20 +135,30 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
           </button>
         </section>
 
+        <app-contract-jobs
+          *ngIf="view === 'contract'"
+          [year]="selectedYear"
+          [month]="selectedMonth"
+        ></app-contract-jobs>
+
+        <ng-container *ngIf="view === 'mine'">
         <section class="t-month-summary">
           <div><span>Trabajos</span><strong>{{ monthJobs.length }}</strong></div>
           <div><span>Finalizados</span><strong>{{ monthFinished }}</strong></div>
           <div><span>Facturado</span><strong>{{ monthIncome | number: "1.0-2" }} €</strong></div>
         </section>
 
-        <!-- PENDIENTES DE REVISIÓN -->
-        <section class="review-switch">
-          <button type="button" [class.on]="!reviewOnly" (click)="reviewOnly = false">
-            Trabajos del mes
+        <!-- CONFIRMADOS / TERMINADOS / EN REVISIÓN -->
+        <section class="review-switch three">
+          <button type="button" [class.on]="listTab === 'confirmados'" (click)="listTab = 'confirmados'">
+            Confirmados <span class="tab-count">{{ monthOpenCount }}</span>
           </button>
-          <button type="button" [class.on]="reviewOnly" (click)="reviewOnly = true">
+          <button type="button" [class.on]="listTab === 'terminados'" (click)="listTab = 'terminados'">
+            Terminados <span class="tab-count">{{ monthFinished }}</span>
+          </button>
+          <button type="button" [class.on]="listTab === 'revision'" (click)="listTab = 'revision'">
             <ion-icon name="hourglass-outline"></ion-icon>
-            Pendientes de revisión
+            Revisión
             <span class="review-count" *ngIf="reviewCount">{{ reviewCount }}</span>
           </button>
         </section>
@@ -159,7 +179,9 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
                 <ion-icon name="document-text-outline"></ion-icon>
               </div>
 
-              <h3 *ngIf="!reviewOnly">TRABAJOS DE {{ monthNames[selectedMonth] | uppercase }}</h3>
+              <h3 *ngIf="!reviewOnly">
+                {{ listTab === "terminados" ? "TERMINADOS" : "CONFIRMADOS" }} DE {{ monthNames[selectedMonth] | uppercase }}
+              </h3>
               <h3 *ngIf="reviewOnly">PENDIENTES DE REVISIÓN</h3>
             </div>
           </div>
@@ -243,6 +265,7 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
             </div>
           </ng-template>
         </section>
+        </ng-container>
       </div>
 
       <!-- =========================
@@ -355,6 +378,16 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
                   [(ngModel)]="newJob.work_point"
                 ></ion-input>
               </ion-item>
+
+              <!-- DETALLES -->
+              <label class="jf-input details-input">
+                <span>Detalles del trabajo</span>
+                <textarea
+                  [(ngModel)]="newJob.details"
+                  maxlength="2000"
+                  [placeholder]="detailsPlaceholder(newJob.job_type)"
+                ></textarea>
+              </label>
 
               <!-- FECHA -->
               <div class="date-field" id="create-date-trigger">
@@ -524,6 +557,19 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
                 {{ selectedJob.start_time }}
               </p>
 
+              <ng-container *ngIf="selectedJob.job_type === 'mudanza'; else workPointTpl">
+                <p><b>📦 Recogida:</b> {{ selectedJob.pickup_point || "—" }}</p>
+                <p><b>🏁 Entrega:</b> {{ selectedJob.dropoff_point || "—" }}</p>
+              </ng-container>
+              <ng-template #workPointTpl>
+                <p><b>📍 Dirección:</b> {{ selectedJob.work_point || "—" }}</p>
+              </ng-template>
+
+              <div class="detail-notes" *ngIf="selectedJob.details">
+                <b>📝 Detalles</b>
+                <span>{{ selectedJob.details }}</span>
+              </div>
+
               <p *ngIf="selectedJob.price_amount != null">
                 <b>Precio:</b>
                 {{ selectedJob.price_amount | number: "1.2-2" }} €{{ priceSuffixText(selectedJob.price_type) }}
@@ -559,6 +605,60 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
               <div class="jf-banner warn" *ngIf="selectedJob.return_reason" style="margin-bottom: 14px">
                 <ion-icon name="alert-circle-outline"></ion-icon>
                 <div><strong>Devuelto al encargado:</strong> {{ selectedJob.return_reason }}</div>
+              </div>
+
+              <!-- EDITAR INFORMACIÓN -->
+              <div class="form-card edit-card">
+                <div class="price-label">✏️ Información del trabajo</div>
+                <label class="jf-input">
+                  <span>Tipo de trabajo</span>
+                  <select [(ngModel)]="selectedJob.job_type">
+                    <option value="mudanza">Mudanza</option>
+                    <option value="montaje">Montaje</option>
+                    <option value="reforma">Reforma</option>
+                  </select>
+                </label>
+                <div class="jf-grid2">
+                  <label class="jf-input">
+                    <span>Cliente</span>
+                    <input [(ngModel)]="selectedJob.client_name" maxlength="80" />
+                  </label>
+                  <label class="jf-input">
+                    <span>Teléfono</span>
+                    <input [(ngModel)]="selectedJob.client_phone" maxlength="20" inputmode="tel" />
+                  </label>
+                </div>
+                <ng-container *ngIf="selectedJob.job_type === 'mudanza'; else editWorkTpl">
+                  <label class="jf-input">
+                    <span>Dirección de recogida</span>
+                    <input [(ngModel)]="selectedJob.pickup_point" maxlength="200" />
+                  </label>
+                  <label class="jf-input">
+                    <span>Dirección de entrega</span>
+                    <input [(ngModel)]="selectedJob.dropoff_point" maxlength="200" />
+                  </label>
+                </ng-container>
+                <ng-template #editWorkTpl>
+                  <label class="jf-input">
+                    <span>Dirección del trabajo</span>
+                    <input [(ngModel)]="selectedJob.work_point" maxlength="200" />
+                  </label>
+                </ng-template>
+                <div class="jf-grid2">
+                  <label class="jf-input">
+                    <span>Fecha</span>
+                    <input type="date" [(ngModel)]="selectedJob.job_date" />
+                  </label>
+                  <label class="jf-input">
+                    <span>Hora</span>
+                    <input type="time" [(ngModel)]="selectedJob.start_time" />
+                  </label>
+                </div>
+                <label class="jf-input">
+                  <span>Detalles</span>
+                  <textarea [(ngModel)]="selectedJob.details" maxlength="2000"
+                            [placeholder]="detailsPlaceholder(selectedJob.job_type)"></textarea>
+                </label>
               </div>
 
               <div class="form-card">
@@ -638,6 +738,62 @@ import { JOB_STATUS_LABELS } from "../../../services/supabase.service";
 
   styles: [
     `
+      .view-switch {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        padding: 5px;
+        margin: 14px 0 12px;
+        border-radius: 16px;
+        background: var(--t-surface);
+        border: 1px solid var(--t-border);
+        box-shadow: var(--t-shadow);
+      }
+      .view-switch button {
+        min-height: 46px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--t-muted);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 800;
+      }
+      .view-switch button.on {
+        background: var(--t-primary);
+        color: var(--t-on-primary);
+      }
+      .review-switch.three {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+      .tab-count {
+        margin-left: 4px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        font-size: 11px;
+        background: var(--t-primary-soft);
+        color: var(--t-primary);
+      }
+      .details-input {
+        margin: 4px 0 10px;
+      }
+      .detail-notes {
+        display: grid;
+        gap: 4px;
+        margin: 8px 0;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: var(--t-surface-2);
+      }
+      .detail-notes span {
+        white-space: pre-wrap;
+        line-height: 1.5;
+        color: var(--t-text);
+      }
+      .edit-card {
+        display: grid;
+        gap: 10px;
+      }
       .review-switch {
         display: grid;
         grid-template-columns: 1fr 1.4fr;
@@ -1616,7 +1772,23 @@ export class AdminTrabajosPage implements OnInit {
   }
 
   /** Filtro "Pendientes de revisión" (de cualquier mes). */
-  reviewOnly = false;
+  /** Pestaña de "Mis trabajos". */
+  listTab: "confirmados" | "terminados" | "revision" = "confirmados";
+  get reviewOnly(): boolean {
+    return this.listTab === "revision";
+  }
+  set reviewOnly(v: boolean) {
+    this.listTab = v ? "revision" : "confirmados";
+  }
+
+  get monthOpenCount(): number {
+    return this.monthJobs.filter((j) => this.isOpenStatus(j.status)).length;
+  }
+
+  /** Mis trabajos (equipo) o trabajos como contratista (solo admin). */
+  view: "mine" | "contract" = "mine";
+  readonly isAdmin: boolean;
+  @ViewChild(ContractJobsComponent) contractJobs?: ContractJobsComponent;
 
   get reviewJobs(): any[] {
     return this.jobs
@@ -1629,7 +1801,9 @@ export class AdminTrabajosPage implements OnInit {
   }
 
   get visibleJobs(): any[] {
-    return this.reviewOnly ? this.reviewJobs : this.monthJobs;
+    if (this.listTab === "revision") return this.reviewJobs;
+    if (this.listTab === "terminados") return this.monthJobs.filter((j) => j.status === "finalizado");
+    return this.monthJobs.filter((j) => this.isOpenStatus(j.status));
   }
 
   get encargados(): Profile[] {
@@ -1702,7 +1876,10 @@ export class AdminTrabajosPage implements OnInit {
   constructor(
     private supabase: SupabaseService,
     private alertCtrl: AlertController,
+    private actionSheetCtrl: ActionSheetController,
+    router: Router,
   ) {
+    this.isAdmin = router.url.startsWith("/admin");
     addIcons({
       "camera-outline": tramoCameraOutline,
       "close-outline": tramoCloseOutline,
@@ -1857,7 +2034,36 @@ export class AdminTrabajosPage implements OnInit {
      ABRIR CREAR
   ========================== */
 
-  openCreate() {
+  /** Botón "Crear trabajo": el administrador elige si lo hace su equipo o como contratista. */
+  async openCreate() {
+    if (!this.isAdmin) {
+      this.openOwnCreate();
+      return;
+    }
+    const sheet = await this.actionSheetCtrl.create({
+      header: "¿Qué trabajo vas a crear?",
+      buttons: [
+        { text: "🏠 Lo hago yo (mi equipo)", handler: () => this.openOwnCreate() },
+        { text: "🤝 Como contratista (lo hace un asociado)", handler: () => this.openContractCreate() },
+        { text: "Cancelar", role: "cancel" },
+      ],
+    });
+    await sheet.present();
+  }
+
+  private openContractCreate() {
+    this.view = "contract";
+    // Espera a que se pinte el componente de contratista
+    setTimeout(() => this.contractJobs?.openCreate(), 60);
+  }
+
+  detailsPlaceholder(type: string): string {
+    if (type === "mudanza") return "Qué hay que mover: muebles, cajas, electrodomésticos, pisos, ascensor…";
+    if (type === "montaje") return "Qué hay que montar: muebles, cocina, armarios, medidas…";
+    return "Qué hay que hacer en la obra: estancias, materiales, plazos…";
+  }
+
+  openOwnCreate() {
     this.newJob = {
       job_type: "mudanza",
       client_name: "",
@@ -1870,6 +2076,7 @@ export class AdminTrabajosPage implements OnInit {
       encargado_id: this.encargados.length === 1 ? this.encargados[0].id : null,
       price_type: "fijo",
       price_amount: null,
+      details: "",
     };
     this.clearNewPhotos();
 
@@ -2004,6 +2211,8 @@ export class AdminTrabajosPage implements OnInit {
         start_time: this.newJob.start_time?.slice(11, 16),
 
         price_amount: Math.round(Number(this.newJob.price_amount) * 100) / 100,
+
+        details: String(this.newJob.details || "").trim() || null,
       };
 
       const created: any = await this.supabase.createJob(payload);
@@ -2041,6 +2250,7 @@ export class AdminTrabajosPage implements OnInit {
   openDetail(job: any) {
     this.selectedJob = {
       ...job,
+      start_time: job.start_time ? String(job.start_time).slice(0, 5) : job.start_time,
     };
 
     this.finalizeData = {
@@ -2083,7 +2293,27 @@ export class AdminTrabajosPage implements OnInit {
         return;
       }
 
+      const j = this.selectedJob;
+      if (!String(j.client_name || "").trim()) {
+        await this.showError("Revisa el trabajo", "Falta el nombre del cliente.");
+        return;
+      }
+      if (!j.job_date) {
+        await this.showError("Revisa el trabajo", "Falta la fecha.");
+        return;
+      }
+      const isMove = j.job_type === "mudanza";
+
       await this.supabase.updateJob(this.selectedJob.id, {
+        job_type: j.job_type,
+        client_name: String(j.client_name).trim(),
+        client_phone: String(j.client_phone || "").trim(),
+        pickup_point: isMove ? String(j.pickup_point || "").trim() : j.pickup_point ?? "",
+        dropoff_point: isMove ? String(j.dropoff_point || "").trim() : j.dropoff_point ?? "",
+        work_point: isMove ? j.work_point ?? "" : String(j.work_point || "").trim(),
+        job_date: String(j.job_date).slice(0, 10),
+        start_time: j.start_time ? String(j.start_time).slice(0, 5) : null,
+        details: String(j.details || "").trim() || null,
         status: "confirmado",
         encargado_id: this.selectedJob.encargado_id,
         price_type: this.selectedJob.price_type,
